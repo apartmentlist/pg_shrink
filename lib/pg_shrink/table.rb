@@ -23,6 +23,12 @@ module PgShrink
       @lock = block
     end
 
+    def locked?(record)
+      if @lock
+        @lock.call(record)
+      end
+    end
+
     def sanitize(opts = {}, &block)
       self.sanitizers << TableSanitizer.new(self, opts, &block)
     end
@@ -61,7 +67,9 @@ module PgShrink
     def run_filters
       self.filters.each do |filter|
         self.records_in_batches.each do |batch|
-          new_set = batch.select {|record| filter.apply(record.dup)}
+          new_set = batch.select do |record|
+            self.locked?(record) || filter.apply(record.dup)
+          end
           self.update_records(batch, new_set)
           # TODO:  Trickle down any filtering dependencies to subtables.
         end

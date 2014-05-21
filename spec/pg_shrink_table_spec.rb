@@ -73,4 +73,24 @@ describe PgShrink::Table do
     end
     @table.run_sanitizers
   end
+
+  it "should allow locking particular records to avoid filtering" do
+    @table.filter_by do |test|
+      !!test[:u]
+    end
+    @table.lock do |test|
+      !!test[:lock]
+    end
+    test_data = [{:u => true, :lock => false}, {:u => false, :lock => false}, {:u => false, :lock => true}]
+    allow(@table).to receive(:records_in_batches).and_return([test_data])
+    allow(@table).to receive(:update_records) do |*args|
+      args.size.should == 2
+      old_batch = args.first
+      new_batch = args.last
+      old_batch.size.should == 3
+      new_batch.size.should == 2
+      new_batch.should == [{:u => true, :lock => false}, {:u => false, :lock => true}]
+    end
+    @table.run_filters
+  end
 end
