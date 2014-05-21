@@ -74,4 +74,30 @@ describe PgShrink::Table do
       end
     end
   end
+  context "when a subtable filter is specified" do
+    let(:table) { PgShrink::Table.new(:test_table) }
+    before(:each) do
+      table.filter_subtable(:subtable)
+    end
+    it "adds subtable to subtables array" do
+      expect(table.subtables.size).to eq(1)
+    end
+
+    describe "when running filters" do
+      before(:each) do
+        table.filter_by do |test|
+          !!test[:u]
+        end
+      end
+      it "runs subtable filters with old and new batches" do
+        test_data = [{:u => true}, {:u => false}]
+        expect(table).to receive(:records_in_batches).and_return([test_data])
+        expect(table).to receive(:filter_subtables) do |old_batch, new_batch|
+          expect(old_batch).to eq(test_data)
+          expect(new_batch).to eq([{:u => true}])
+        end
+        table.run_filters
+      end
+    end
+  end
 end
