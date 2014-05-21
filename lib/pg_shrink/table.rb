@@ -27,34 +27,55 @@ module PgShrink
       self.sanitizers << TableSanitizer.new(self, opts, &block)
     end
 
-    # TODO:  This is a little awkward... need to figure out the right way to do this, but the core idea is
-    # that because the set of records is likely to be too large to load all at once, we want to load
-    # it in batches, and after each batch commit back changes.  So records_in_batches should return a
-    # tuple of [records, callback_function]
-    # where callback_function responds to 'call' (ie is a lambda or proc) and accepts the new set of
-    # records.  It should then delete any records from the original batch of records that are not
-    # in the new set.
+    # TODO: This is a little awkward... need to figure out the right way to do
+    # this, but the core idea is that because the set of records is likely to
+    # be too large to load all at once, we want to load it in batches, and
+    # after each batch commit back changes.  So the data_source should define both
+    # an update_records method and a records_in_batches method.
     #
-    #  TODO:  Do we need to distinguish between filters and sanitizers at this level?  IE does the
-    #  callback need to enforce the difference between filtering and updating?
+    # The update_records method that takes a set of original records and a new
+    # set of records.  It deletes any records that were in the original set but
+    # not the new set, and does any updates necessary between the new and old
+    # set.
+    #
+    # records_in_batches should be enumerable and on each time through yield a set
+    # of records.
+    #
+    #  TODO:  Figure out if we need to distinguish between filters and
+    #  sanitizers at this level?  IE does the callback need to enforce the
+    #  difference between filtering and updating?
+    def update_records(original_records, new_records)
+      if self.data_source
+        data_source.update_records(original_records, new_records)
+      end
+    end
+
     def records_in_batches
       if self.data_source
         self.data_source.records_in_batches
       else
-        [[], lambda {|set|}]
+        [[]]
       end
     end
 
     def run_filters
       self.filters.each do |filter|
-        self.records_in_batches.each do |batch, update_fn|
-          new_set = batch.select {|record| filter.apply(record)}
-          update_fn.call(new_set)
+        self.records_in_batches.each do |batch|
+          new_set = batch.select {|record| filter.apply(record.dup)}
+          self.update_records(batch, new_set)
+          # TODO:  Trickle down any filtering dependencies to subtables.
         end
       end
     end
 
     def run_sanitizers
+      self.sanitizers.each do |filter|
+        self.records_in_batches.each do |batch|
+          new_set = batch.map {|record| filter.apply(record.dup)}
+          self.update_records(batch, new_set)
+          # TODO:  Trickle down any sanitization dependencies to subtables.
+        end
+      end
     end
 
     def run

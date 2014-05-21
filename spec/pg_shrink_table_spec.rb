@@ -43,11 +43,34 @@ describe PgShrink::Table do
       !!test[:u]
     end
     test_data = [{:u => true}, {:u => false}]
-    result_set_verifier = lambda do |new_batch|
+    allow(@table).to receive(:records_in_batches).and_return([test_data])
+    allow(@table).to receive(:update_records) do |*args|
+      args.size.should == 2
+      old_batch = args.first
+      new_batch = args.last
+      old_batch.size.should == 2
       new_batch.size.should == 1
       new_batch.first.should == {:u => true}
     end
-    allow(@table).to receive(:records_in_batches).and_return([[test_data, result_set_verifier]])
     @table.run_filters
+  end
+
+  it "Should be able to run sanitization and return an altered set of records" do
+    @table.sanitize do |test|
+      test[:u] = -test[:u]
+      test
+    end
+    test_data = [{:u => 1}, {:u => 2}]
+    allow(@table).to receive(:records_in_batches).and_return([test_data])
+    allow(@table).to receive(:update_records) do |*args|
+      args.size.should == 2
+      old_batch = args.first
+      new_batch = args.last
+      old_batch.size.should == 2
+      new_batch.size.should == 2
+      old_batch.should == [{:u => 1}, {:u => 2}]
+      new_batch.should == [{:u => -1}, {:u => -2}]
+    end
+    @table.run_sanitizers
   end
 end
