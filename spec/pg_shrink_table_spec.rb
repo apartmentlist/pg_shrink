@@ -84,4 +84,27 @@ describe PgShrink::Table do
       end
     end
   end
+
+  it "Should be able to add a subtable filter" do
+    @table.filter_subtable(:subtable)
+    @table.subtables.size.should == 1
+    @table.subtables.first.is_a?(PgShrink::SubTable).should == true
+  end
+
+  it "Should run subtable filters with old and new batches when running filters" do
+    @table.filter_by do |test|
+      !!test[:u]
+    end
+    @table.filter_subtable(:subtable)
+    test_data = [{:u => true}, {:u => false}]
+    allow(@table).to receive(:records_in_batches).and_return([test_data])
+    expect(@table).to receive(:filter_subtables) do |*args|
+      args.size.should == 2
+      old_batch = args.first
+      new_batch = args.last
+      old_batch.should == [{:u => true}, {:u => false}]
+      new_batch.should == [{:u => true}]
+    end
+    @table.run_filters
+  end
 end

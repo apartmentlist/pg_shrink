@@ -2,6 +2,10 @@ module PgShrink
   class Table
     attr_accessor :table_name
     attr_accessor :data_source
+    # TODO:  Update to allow options so we can deal with non-standard unique
+    # keys.
+    # TODO:  Figure out, do we need to be able to support tables with no
+    # keys?  If so, how should we handle that?
     def initialize(table_name, data_source = nil)
       self.table_name = table_name
       self.data_source = data_source
@@ -15,8 +19,16 @@ module PgShrink
       @sanitizers ||= []
     end
 
+    def subtables
+      @subtables ||= []
+    end
+
     def filter_by(opts = {}, &block)
       self.filters << TableFilter.new(self, opts, &block)
+    end
+
+    def filter_subtable(table_name, opts = {})
+      self.subtables << SubTable.new(self, table_name, opts)
     end
 
     def lock(opts = {}, &block)
@@ -64,6 +76,20 @@ module PgShrink
       end
     end
 
+    def get_records(finder_options)
+      if self.data_source
+        self.data_source.get_records(finder_options)
+      else
+        []
+      end
+    end
+
+    def filter_subtables(old_set, new_set)
+      self.subtables.each do |subtable|
+        subtable.propagate_filters(old_set, new_set)
+      end
+    end
+
     def run_filters
       self.filters.each do |filter|
         self.records_in_batches.each do |batch|
@@ -71,6 +97,7 @@ module PgShrink
             self.locked?(record) || filter.apply(record.dup)
           end
           self.update_records(batch, new_set)
+          self.filter_subtables(batch, new_set)
           # TODO:  Trickle down any filtering dependencies to subtables.
         end
       end
