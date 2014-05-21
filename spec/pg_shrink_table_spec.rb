@@ -22,7 +22,7 @@ describe PgShrink::Table do
     context "when running filters" do
       it "should return matching subset" do
         test_data = [{:u => 1}, {:u => 2}]
-        expect(table).to receive(:records_in_batches).and_return([test_data])
+        expect(table).to receive(:records_in_batches).and_yield(test_data)
         expect(table).to receive(:update_records) do |*args|
           args.size.should == 2
           old_batch = args.first
@@ -40,7 +40,7 @@ describe PgShrink::Table do
           !!test[:lock]
         end
         test_data = [{:u => 1, :lock => false}, {:u => 2, :lock => false}, {:u => 2, :lock => true}]
-        allow(table).to receive(:records_in_batches).and_return([test_data])
+        allow(table).to receive(:records_in_batches).and_yield(test_data)
         allow(table).to receive(:update_records) do |*args|
           args.size.should == 2
           old_batch = args.first
@@ -69,7 +69,7 @@ describe PgShrink::Table do
       context "when running sanitizers" do
         it "returns an altered set of records" do
           test_data = [{:u => 1}, {:u => 2}]
-          expect(table).to receive(:records_in_batches).and_return([test_data])
+          expect(table).to receive(:records_in_batches).and_yield(test_data)
           expect(table).to receive(:update_records) do |*args|
             args.size.should == 2
             old_batch = args.first
@@ -85,26 +85,29 @@ describe PgShrink::Table do
     end
   end
 
-  it "Should be able to add a subtable filter" do
-    @table.filter_subtable(:subtable)
-    @table.subtables.size.should == 1
-    @table.subtables.first.is_a?(PgShrink::SubTable).should == true
-  end
+  context "when a subtable filter is specified" do
+    let(:table) { PgShrink::Table.new(:test_table) }
+    before(:each) do 
+      table.filter_subtable(:subtable)
+    end
+    it "adds subtable to subtables array" do
+      expect(table.subtables.size).to eq(1)
+    end
 
-  it "Should run subtable filters with old and new batches when running filters" do
-    @table.filter_by do |test|
-      !!test[:u]
+    it "runs subtable filters with old and new batches when running filters" do
+      table.filter_by do |test|
+        !!test[:u]
+      end
+      test_data = [{:u => true}, {:u => false}]
+      expect(table).to receive(:records_in_batches).and_yield(test_data)
+      expect(table).to receive(:filter_subtables) do |*args|
+        args.size.should == 2
+        old_batch = args.first
+        new_batch = args.last
+        old_batch.should == [{:u => true}, {:u => false}]
+        new_batch.should == [{:u => true}]
+      end
+      table.run_filters
     end
-    @table.filter_subtable(:subtable)
-    test_data = [{:u => true}, {:u => false}]
-    allow(@table).to receive(:records_in_batches).and_return([test_data])
-    expect(@table).to receive(:filter_subtables) do |*args|
-      args.size.should == 2
-      old_batch = args.first
-      new_batch = args.last
-      old_batch.should == [{:u => true}, {:u => false}]
-      new_batch.should == [{:u => true}]
-    end
-    @table.run_filters
   end
 end

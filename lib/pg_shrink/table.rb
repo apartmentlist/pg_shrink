@@ -56,8 +56,7 @@ module PgShrink
     # not the new set, and does any updates necessary between the new and old
     # set.
     #
-    # records_in_batches should be enumerable and on each time through yield a set
-    # of records.
+    # records_in_batches should yield a series of batches # of records.
     #
     #  TODO:  Figure out if we need to distinguish between filters and
     #  sanitizers at this level?  IE does the callback need to enforce the
@@ -70,9 +69,9 @@ module PgShrink
 
     def records_in_batches
       if self.data_source
-        self.data_source.records_in_batches
+        self.data_source.records_in_batches(self.table_name)
       else
-        [[]]
+        yield []
       end
     end
 
@@ -92,7 +91,7 @@ module PgShrink
 
     def run_filters
       self.filters.each do |filter|
-        self.records_in_batches.each do |batch|
+        self.records_in_batches do |batch|
           new_set = batch.select do |record|
             self.locked?(record) || filter.apply(record.dup)
           end
@@ -105,7 +104,7 @@ module PgShrink
 
     def run_sanitizers
       self.sanitizers.each do |filter|
-        self.records_in_batches.each do |batch|
+        self.records_in_batches do |batch|
           new_set = batch.map {|record| filter.apply(record.dup)}
           self.update_records(batch, new_set)
           # TODO:  Trickle down any sanitization dependencies to subtables.
