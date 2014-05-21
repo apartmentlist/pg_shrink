@@ -37,4 +37,17 @@ describe PgShrink::Table do
     end
     @table.sanitizers.first.apply({:u => 0}).should == {:u => 1}
   end
+
+  it "Should be able to run filters and return a subset of records" do
+    @table.filter_by do |test|
+      !!test[:u]
+    end
+    test_data = [{:u => true}, {:u => false}]
+    result_set_verifier = lambda do |new_batch|
+      new_batch.size.should == 1
+      new_batch.first.should == {:u => true}
+    end
+    allow(@table).to receive(:records_in_batches).and_return([[test_data, result_set_verifier]])
+    @table.run_filters
+  end
 end
