@@ -15,9 +15,8 @@ module PgShrink
       @opts = self.default_opts.merge(opts)
     end
 
-    # TODO:  Need to refactor to make it easy to access a unique object for a table.
     def table
-      self.database.get_table[self.table_name]
+      self.database.get_table(self.table_name)
     end
 
     # TODO:  This kind of feels like it should actually use a TableFilter,
@@ -32,7 +31,7 @@ module PgShrink
       new_records = old_records.select do |record|
         self.table.locked?(record) || new_batch_keys.include?(record[@opts[:foreign_key]])
       end
-      self.database.update_records(original_records, new_records)
+      self.table.update_records(old_records, new_records)
     end
 
   end

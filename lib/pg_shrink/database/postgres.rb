@@ -75,6 +75,10 @@ module PgShrink
       end
     end
 
+    def get_records(table_name, opts)
+      self.connection.from(table_name).where(opts).all
+    end
+
     def delete_records(table_name, condition_to_delete)
       self.connection.from(table_name).where(condition_to_delete).delete
     end

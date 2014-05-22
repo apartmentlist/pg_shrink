@@ -49,21 +49,27 @@ module PgShrink
       self.sanitizers << TableSanitizer.new(self, opts, &block)
     end
 
+    def get_records(opts)
+      if self.database
+        database.get_records(self.table_name, opts)
+      else
+        []
+      end
+    end
     #  TODO:  Figure out if we need to distinguish between filters and
     #  sanitizers at this level?  IE does the callback need to enforce the
     #  difference between filtering and updating?
     #
-    #  Database shouldn't care, but we might want to have 2 methods at the
-    #  table level.
+    #  Or is it good enough that the database handles all of this?
     def update_records(original_records, new_records)
       if self.database
         database.update_records(self.table_name, original_records, new_records)
       end
     end
 
-    def records_in_batches
+    def records_in_batches(&block)
       if self.database
-        self.database.records_in_batches(self.table_name)
+        self.database.records_in_batches(self.table_name, &block)
       else
         yield []
       end
