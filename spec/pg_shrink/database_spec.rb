@@ -1,33 +1,25 @@
 require 'spec_helper'
 
 describe PgShrink::Database do
+  let(:db) {PgShrink::Database.new}
   it "should yield a table to filter_table" do
-    db = PgShrink::Database.new
     db.filter_table(:test_table) do |tb|
-      tb.is_a?(PgShrink::Table).should == true
-      tb.database.should == db
-      tb.table_name.should == :test_table
+      expect(tb.class).to eq(PgShrink::Table)
+      expect(tb.database).to eq(db)
+      expect(tb.table_name).to eq(:test_table)
     end
   end
 
   it "should allow options to set a different primary_key in filter_table" do
-    db = PgShrink::Database.new
     db.filter_table(:test_table, :primary_key => :foo) do |tb|
-      tb.is_a?(PgShrink::Table).should == true
-      tb.database.should == db
-      tb.primary_key.should == :foo
+      expect(tb.primary_key).to eq(:foo)
     end
   end
 
   it "should retain options in later invocations" do
-    db = PgShrink::Database.new
-    db.filter_table(:test_table, :primary_key => :foo) do |tb|
-      tb.is_a?(PgShrink::Table).should == true
-      tb.database.should == db
-      tb.primary_key.should == :foo
-    end
+    db.filter_table(:test_table, :primary_key => :foo) {}
     db.filter_table(:test_table) do |tb|
-      tb.primary_key.should == :foo
+      expect(tb.primary_key).to eq(:foo)
     end
   end
 end
