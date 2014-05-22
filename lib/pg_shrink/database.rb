@@ -6,7 +6,13 @@ module PgShrink
 
     # get_table should return a unique table representation for this database.
     def get_table(table_name)
-      self.tables[table_name] ||= Table.new(table_name, self)
+      self.tables[table_name] ||= Table.new(self, table_name)
+    end
+
+    def filter_table(table_name, opts = {})
+      table = self.get_table(table_name)
+      table.set_opts(opts)
+      yield table
     end
 
     # records_in_batches should yield a series of batches # of records.

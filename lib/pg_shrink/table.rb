@@ -2,13 +2,17 @@ module PgShrink
   class Table
     attr_accessor :table_name
     attr_accessor :database
+    attr_accessor :opts
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
     def initialize(database, table_name, opts = {})
       self.table_name = table_name
       self.database = database
       @opts = opts
-      @primary_key = opts[:primary_key] if opts[:primary_key]
+    end
+
+    def set_opts(opts)
+      @opts = @opts.merge(opts)
     end
 
     def filters
@@ -103,7 +107,7 @@ module PgShrink
     end
 
     def primary_key
-      @primary_key ||= :id
+      self.opts[:primary_key] || :id
     end
 
     def run
