@@ -39,7 +39,7 @@ module PgShrink
     # after each batch commit back changes.  So the data_source should define both
     # an update_records method and a records_in_batches method.
     #
-    # The update_records method that takes a set of original records and a new
+    # The update_records method then takes a set of original records and a new
     # set of records.  It deletes any records that were in the original set but
     # not the new set, and does any updates necessary between the new and old
     # set.
