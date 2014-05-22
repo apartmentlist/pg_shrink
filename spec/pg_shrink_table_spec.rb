@@ -2,7 +2,8 @@ require 'spec_helper'
 
 describe PgShrink::Table do
   context "when a filter is specified" do
-    let(:table) { PgShrink::Table.new(:test_table) }
+    let(:database) {PgShrink::Database.new}
+    let(:table) { PgShrink::Table.new(database, :test_table) }
     before(:each) do
       table.filter_by {|test| test[:u] == 1 }
     end
@@ -86,8 +87,9 @@ describe PgShrink::Table do
   end
 
   context "when a subtable filter is specified" do
-    let(:table) { PgShrink::Table.new(:test_table) }
-    before(:each) do 
+    let(:database) {PgShrink::Database.new}
+    let(:table) { PgShrink::Table.new(database, :test_table) }
+    before(:each) do
       table.filter_subtable(:subtable)
     end
     it "adds subtable to subtables array" do
@@ -100,6 +102,7 @@ describe PgShrink::Table do
       end
       test_data = [{:u => true}, {:u => false}]
       expect(table).to receive(:records_in_batches).and_yield(test_data)
+      expect(database).to receive(:update_records)
       expect(table).to receive(:filter_subtables) do |*args|
         args.size.should == 2
         old_batch = args.first

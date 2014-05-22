@@ -1,14 +1,14 @@
 module PgShrink
   class Table
     attr_accessor :table_name
-    attr_accessor :data_source
-    # TODO:  Update to allow options so we can deal with non-standard unique
-    # keys.
+    attr_accessor :database
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
-    def initialize(table_name, data_source = nil)
+    def initialize(database, table_name, opts = {})
       self.table_name = table_name
-      self.data_source = data_source
+      self.database = database
+      @opts = opts
+      @primary_key = opts[:primary_key] if opts[:primary_key]
     end
 
     def filters
@@ -45,39 +45,29 @@ module PgShrink
       self.sanitizers << TableSanitizer.new(self, opts, &block)
     end
 
-    # TODO: This is a little awkward... need to figure out the right way to do
-    # this, but the core idea is that because the set of records is likely to
-    # be too large to load all at once, we want to load it in batches, and
-    # after each batch commit back changes.  So the data_source should define both
-    # an update_records method and a records_in_batches method.
-    #
-    # The update_records method then takes a set of original records and a new
-    # set of records.  It deletes any records that were in the original set but
-    # not the new set, and does any updates necessary between the new and old
-    # set.
-    #
-    # records_in_batches should yield a series of batches # of records.
-    #
     #  TODO:  Figure out if we need to distinguish between filters and
     #  sanitizers at this level?  IE does the callback need to enforce the
     #  difference between filtering and updating?
+    #
+    #  Database shouldn't care, but we might want to have 2 methods at the
+    #  table level.
     def update_records(original_records, new_records)
-      if self.data_source
-        data_source.update_records(original_records, new_records)
+      if self.database
+        database.update_records(self.table_name, original_records, new_records)
       end
     end
 
     def records_in_batches
-      if self.data_source
-        self.data_source.records_in_batches(self.table_name)
+      if self.database
+        self.database.records_in_batches(self.table_name)
       else
         yield []
       end
     end
 
     def get_records(finder_options)
-      if self.data_source
-        self.data_source.get_records(finder_options)
+      if self.database
+        self.database.get_records(self.table_name, finder_options)
       else
         []
       end
@@ -110,6 +100,10 @@ module PgShrink
           # TODO:  Trickle down any sanitization dependencies to subtables.
         end
       end
+    end
+
+    def primary_key
+      @primary_key ||= :id
     end
 
     def run
