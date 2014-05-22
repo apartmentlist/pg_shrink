@@ -2,7 +2,8 @@ require 'spec_helper'
 
 describe PgShrink::Table do
   context "when a filter is specified" do
-    let(:table) { PgShrink::Table.new(:test_table) }
+    let(:database) {PgShrink::Database.new}
+    let(:table) { PgShrink::Table.new(database, :test_table) }
     before(:each) do
       table.filter_by {|test| test[:u] == 1 }
     end
@@ -22,7 +23,7 @@ describe PgShrink::Table do
     context "when running filters" do
       it "should return matching subset" do
         test_data = [{:u => 1}, {:u => 2}]
-        expect(table).to receive(:records_in_batches).and_return([test_data])
+        expect(table).to receive(:records_in_batches).and_yield(test_data)
         expect(table).to receive(:update_records) do |old_batch, new_batch|
           expect(old_batch.size).to eq(2)
           expect(new_batch.size).to eq(1)
@@ -37,7 +38,7 @@ describe PgShrink::Table do
       end
       it "should not filter locked records" do
         test_data = [{:u => 1, :lock => false}, {:u => 2, :lock => false}, {:u => 2, :lock => true}]
-        allow(table).to receive(:records_in_batches).and_return([test_data])
+        allow(table).to receive(:records_in_batches).and_yield(test_data)
         allow(table).to receive(:update_records) do |old_batch, new_batch|
           expect(old_batch.size).to eq(3)
           expect(new_batch.size).to eq(2)
@@ -49,7 +50,8 @@ describe PgShrink::Table do
   end
 
   context "when a sanitizer is specified" do
-    let(:table) { PgShrink::Table.new(:test_table) }
+    let(:database) {PgShrink::Database.new}
+    let(:table) { PgShrink::Table.new(database, :test_table) }
     before(:each) do
       table.sanitize do |test|
         test[:u] = -test[:u]
@@ -65,7 +67,7 @@ describe PgShrink::Table do
     context "when running sanitizers" do
       it "returns an altered set of records" do
         test_data = [{:u => 1}, {:u => 2}]
-        expect(table).to receive(:records_in_batches).and_return([test_data])
+        expect(table).to receive(:records_in_batches).and_yield(test_data)
         expect(table).to receive(:update_records) do |old_batch, new_batch|
           expect(old_batch).to eq(test_data)
           expect(new_batch).to eq([{:u => -1}, {:u => -2}])
@@ -75,7 +77,8 @@ describe PgShrink::Table do
     end
   end
   context "when a subtable filter is specified" do
-    let(:table) { PgShrink::Table.new(:test_table) }
+    let(:database) {PgShrink::Database.new}
+    let(:table) { PgShrink::Table.new(database, :test_table) }
     before(:each) do
       table.filter_subtable(:subtable)
     end
@@ -91,7 +94,8 @@ describe PgShrink::Table do
       end
       it "runs subtable filters with old and new batches" do
         test_data = [{:u => true}, {:u => false}]
-        expect(table).to receive(:records_in_batches).and_return([test_data])
+        expect(table).to receive(:records_in_batches).and_yield(test_data)
+        expect(database).to receive(:update_records)
         expect(table).to receive(:filter_subtables) do |old_batch, new_batch|
           expect(old_batch).to eq(test_data)
           expect(new_batch).to eq([{:u => true}])
