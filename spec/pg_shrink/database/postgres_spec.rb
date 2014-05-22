@@ -2,19 +2,19 @@ require 'spec_helper'
 require 'pg_spec_helper'
 
 describe PgShrink::Database::Postgres do
+  let(:db) do
+    PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :batch_size => 5, :user => 'postgres')
+  end
   before(:all) do
     PgSpecHelper.create_database
-    PgSpecHelper.drop_table(:test_table)
-    PgSpecHelper.create_table(:test_table, {'name' => 'character(128)', 'test' => 'integer'})
+    PgSpecHelper.drop_table(db.connection, :test_table)
+    PgSpecHelper.create_table(db.connection, :test_table, {'name' => 'character(128)', 'test' => 'integer'})
   end
   before(:each) do
-    PgSpecHelper.clear_table(:test_table)
+    PgSpecHelper.clear_table(db.connection, :test_table)
   end
 
   context "A simple postgres database" do
-    let(:db) do
-      PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :batch_size => 5, :user => 'postgres')
-    end
     it "sets up a Sequel connection" do
       expect(db.connection.class).to eq(Sequel::Postgres::Database)
     end

@@ -11,23 +11,20 @@ module PgSpecHelper
     `psql --username=#{user} --command="create database #{db_name};"`
   end
 
-  def self.drop_table(table, db_name = 'test_pg_shrink', user = 'postgres')
-    db = Sequel.connect("postgres://#{user}@localhost/#{db_name}")
-    db.run("drop table if exists #{table}")
+  def self.drop_table(connection, table)
+    connection.run("drop table if exists #{table}")
   end
-  def self.create_table(table, columns = {}, primary_key = :id, db_name = 'test_pg_shrink', user = 'postgres')
+  def self.create_table(connection, table, columns = {}, primary_key = :id)
     primary_key = primary_key.to_sym
     columns = {primary_key=> 'serial primary key'}.merge(columns.symbolize_keys)
     sql = "create table #{table} (" +
       columns.map {|col, type| "#{col} #{type}"}.join(',') +
       ")"
-    db = Sequel.connect("postgres://#{user}@localhost/#{db_name}")
-    db.run(sql)
+    connection.run(sql)
   end
 
-  def self.clear_table(table, db_name = 'test_pg_shrink', user = 'postgres')
-    db = Sequel.connect("postgres://#{user}@localhost/#{db_name}")
-    db.run("delete from #{table};")
+  def self.clear_table(connection, table)
+    connection.run("delete from #{table};")
   end
 
 end
