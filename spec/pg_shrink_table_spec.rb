@@ -1,96 +1,87 @@
 require 'spec_helper'
 
 describe PgShrink::Table do
-  before(:each) do
-    @table = PgShrink::Table.new(:test_table)
-  end
+  context "when a filter is specified" do
+    let(:table) { PgShrink::Table.new(:test_table) }
+    before(:each) do
+      table.filter_by {|test| test[:u] == 1 }
+    end
 
-  it "should set up filters and add them to an array" do
-    @table.filter_by do |test|
-      !!test[:u]
+    it "should add filter to filters array" do
+      expect(table.filters.size).to eq(1)
     end
-    @table.filters.size.should == 1
-    @table.filters.first.is_a?(PgShrink::TableFilter).should == true
-  end
 
-  it "should properly pass along the block to table filters" do
-    @table.filter_by do |test|
-      test[:u] == 1
+    it "should accept values that match the block" do
+      expect(table.filters.first.apply({:u => 1})).to eq(true)
     end
-    @table.filters.first.apply({:u => 1}).should == true
-    @table.filters.first.apply({:u => 2}).should == false
-  end
 
-  it "should set up sanitizers and add them to an array" do
-    @table.sanitize do |test|
-      test[:u] = "foo"
-      test
+    it "should reject values that don't match the block" do
+      expect(table.filters.first.apply({:u => 2})).to eq(false)
     end
-    @table.sanitizers.size.should == 1
-    @table.sanitizers.first.is_a?(PgShrink::TableSanitizer).should == true
-  end
 
-  it "should properly pass along the block to table sanitizers" do
-    @table.sanitize do |test|
-      test[:u] = 1
-      test
+    context "when running filters" do
+      it "should return matching subset" do
+        test_data = [{:u => 1}, {:u => 2}]
+        expect(table).to receive(:records_in_batches).and_return([test_data])
+        expect(table).to receive(:update_records) do |*args|
+          args.size.should == 2
+          old_batch = args.first
+          new_batch = args.last
+          old_batch.size.should == 2
+          new_batch.size.should == 1
+          new_batch.first.should == {:u => 1}
+        end
+        table.run_filters
+      end
     end
-    @table.sanitizers.first.apply({:u => 0}).should == {:u => 1}
+    context "when locked" do
+      it "should not filter locked records" do
+        table.lock do |test|
+          !!test[:lock]
+        end
+        test_data = [{:u => 1, :lock => false}, {:u => 2, :lock => false}, {:u => 2, :lock => true}]
+        allow(table).to receive(:records_in_batches).and_return([test_data])
+        allow(table).to receive(:update_records) do |*args|
+          args.size.should == 2
+          old_batch = args.first
+          new_batch = args.last
+          old_batch.size.should == 3
+          new_batch.size.should == 2
+          new_batch.should == [{:u => 1, :lock => false}, {:u => 2, :lock => true}]
+        end
+        table.run_filters
+      end
+    end
   end
-
-  it "Should be able to run filters and return a subset of records" do
-    @table.filter_by do |test|
-      !!test[:u]
+  
+  context "when a sanitizer is specified" do
+    before(:each) do 
+      table.sanitize do |test|
+        test[:u] = -test[:u]
+        test
+      end
+      it "should add sanitizer to sanitizers array" do
+        expect(table.sanitizers.size).to eq(1)
+      end
+      it "should alter values based on the block" do
+        expect(table.filters.first.apply({:u => 1})).to eq({:u => -1})
+      end
+      context "when running sanitizers" do
+        it "returns an altered set of records" do
+          test_data = [{:u => 1}, {:u => 2}]
+          expect(table).to receive(:records_in_batches).and_return([test_data])
+          expect(table).to receive(:update_records) do |*args|
+            args.size.should == 2
+            old_batch = args.first
+            new_batch = args.last
+            old_batch.size.should == 2
+            new_batch.size.should == 2
+            old_batch.should == [{:u => 1}, {:u => 2}]
+            new_batch.should == [{:u => -1}, {:u => -2}]
+          end
+          table.run_sanitizers
+        end
+      end
     end
-    test_data = [{:u => true}, {:u => false}]
-    allow(@table).to receive(:records_in_batches).and_return([test_data])
-    allow(@table).to receive(:update_records) do |*args|
-      args.size.should == 2
-      old_batch = args.first
-      new_batch = args.last
-      old_batch.size.should == 2
-      new_batch.size.should == 1
-      new_batch.first.should == {:u => true}
-    end
-    @table.run_filters
-  end
-
-  it "Should be able to run sanitization and return an altered set of records" do
-    @table.sanitize do |test|
-      test[:u] = -test[:u]
-      test
-    end
-    test_data = [{:u => 1}, {:u => 2}]
-    allow(@table).to receive(:records_in_batches).and_return([test_data])
-    allow(@table).to receive(:update_records) do |*args|
-      args.size.should == 2
-      old_batch = args.first
-      new_batch = args.last
-      old_batch.size.should == 2
-      new_batch.size.should == 2
-      old_batch.should == [{:u => 1}, {:u => 2}]
-      new_batch.should == [{:u => -1}, {:u => -2}]
-    end
-    @table.run_sanitizers
-  end
-
-  it "should allow locking particular records to avoid filtering" do
-    @table.filter_by do |test|
-      !!test[:u]
-    end
-    @table.lock do |test|
-      !!test[:lock]
-    end
-    test_data = [{:u => true, :lock => false}, {:u => false, :lock => false}, {:u => false, :lock => true}]
-    allow(@table).to receive(:records_in_batches).and_return([test_data])
-    allow(@table).to receive(:update_records) do |*args|
-      args.size.should == 2
-      old_batch = args.first
-      new_batch = args.last
-      old_batch.size.should == 3
-      new_batch.size.should == 2
-      new_batch.should == [{:u => true, :lock => false}, {:u => false, :lock => true}]
-    end
-    @table.run_filters
   end
 end
