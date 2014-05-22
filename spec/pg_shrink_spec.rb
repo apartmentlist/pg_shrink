@@ -7,8 +7,8 @@ describe PgShrink do
       PgSpecHelper.create_database
       PgSpecHelper.drop_table(:users)
       PgSpecHelper.drop_table(:user_preferences)
-      PgSpecHelper.create_table(:users, {'name' => 'character(256)', 'email' => 'character(256)'})
-      PgSpecHelper.create_table(:user_preferences, {'user_id' => 'integer', 'name' => 'character(256)', 'value' => 'character(256)'})
+      PgSpecHelper.create_table(:users, {'name' => 'character varying(256)', 'email' => 'character varying(256)'})
+      PgSpecHelper.create_table(:user_preferences, {'user_id' => 'integer', 'name' => 'character varying(256)', 'value' => 'character varying(256)'})
     end
 
     before(:each) do
@@ -32,6 +32,12 @@ describe PgShrink do
         f.filter_subtable(:user_preferences, :foreign_key => :user_id)
       end
       @database.run_filters
+
+      remaining_users = @database.connection.from(:users).all
+      remaining_users.size.should == 1
+      remaining_preferences = @database.connection.from(:user_preferences).all
+      remaining_preferences.size.should == 3
+      remaining_preferences.map {|u| u[:user_id]}.uniq.should == [remaining_users.first[:id]]
     end
   end
 end
