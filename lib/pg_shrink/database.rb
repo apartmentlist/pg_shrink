@@ -20,12 +20,23 @@ module PgShrink
       raise "implement in subclass"
     end
 
+    # get_records should take a table name and options hash and return a specific set of records
+    def get_records(table_name, opts)
+      raise "implement in subclass"
+    end
+
     # The update_records method takes a set of original records and a new
     # set of records.  It deletes any records that were in the original set but
     # not the new set, and does any updates necessary between the new and old
     # set.
     def update_records(table_name, old_records, new_records)
       raise "implement in subclass"
+    end
+
+    def run_filters
+      self.tables.values.each do |table|
+        table.run_filters
+      end
     end
   end
 end
