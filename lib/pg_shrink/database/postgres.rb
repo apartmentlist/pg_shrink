@@ -34,7 +34,7 @@ module PgShrink
     end
 
     def records_in_batches(table_name)
-      table = self.get_table(table_name)
+      table = self.table(table_name)
       primary_key = table.primary_key
       max_id = self.connection["select max(#{primary_key}) from #{table_name}"].first[:max]
       i = 1;
@@ -48,7 +48,7 @@ module PgShrink
     # TODO:  Do we need to do some checking to make sure new_records has
     # primary keys that are a strict subset of update_records?
     def update_records(table_name, old_records, new_records)
-      table = self.get_table(table_name)
+      table = self.table(table_name)
       primary_key = table.primary_key
 
       # no inject so we only create 1 object

@@ -16,7 +16,7 @@ module PgShrink
     end
 
     def table
-      self.database.get_table(self.table_name)
+      self.database.table(self.table_name)
     end
 
     # TODO:  This kind of feels like it should actually use a TableFilter,
