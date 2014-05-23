@@ -27,11 +27,11 @@ module PgShrink
       old_batch_keys = old_parent_data.map {|record| record[@opts[:primary_key]]}
       new_batch_keys = new_parent_data.map {|record| record[@opts[:primary_key]]}
 
-      old_records = self.table.get_records(@opts[:foreign_key] => old_batch_keys)
-      new_records = old_records.select do |record|
-        table.locked?(record) || new_batch_keys.include?(record[@opts[:foreign_key]])
+      foreign_key = @opts[:foreign_key]
+      old_records = table.get_records(foreign_key => old_batch_keys)
+      table.filter_batch(old_records) do |record|
+        new_batch_keys.include?(record[foreign_key])
       end
-      table.update_records(old_records, new_records)
     end
 
   end

@@ -74,15 +74,20 @@ module PgShrink
       end
     end
 
+    def filter_batch(batch, &filter_block)
+      new_set = batch.select do |record|
+        self.locked?(record) || filter_block.call(record.dup)
+      end
+      self.update_records(batch, new_set)
+      self.filter_subtables(batch, new_set)
+    end
+
     def filter!
       self.filters.each do |filter|
         self.records_in_batches do |batch|
-          new_set = batch.select do |record|
-            self.locked?(record) || filter.apply(record.dup)
+          self.filter_batch(batch) do |record|
+            filter.apply(record)
           end
-          self.update_records(batch, new_set)
-          self.filter_subtables(batch, new_set)
-          # TODO:  Trickle down any filtering dependencies to subtables.
         end
       end
     end
