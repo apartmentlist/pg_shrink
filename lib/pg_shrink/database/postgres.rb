@@ -48,8 +48,6 @@ module PgShrink
       end
     end
 
-    # TODO:  Do we need to do some checking to make sure new_records has
-    # primary keys that are a strict subset of update_records?
     def update_records(table_name, old_records, new_records)
       table = self.table(table_name)
       primary_key = table.primary_key
@@ -66,8 +64,8 @@ module PgShrink
         self.delete_records(table_name, {primary_key => deleted_record_ids})
       end
 
-      # TODO:  Is it worth optimizing this to do bulk updates?  Or are bulk
-      # deletes above good enough?
+      # TODO:  This can be optimized if performance is too slow.  Will impact the
+      # speed of sanitizing the already-filtered dataset.
       new_records.each do |rec|
         if old_records_by_key[rec[primary_key]] != rec
           self.connection.from(table_name).
