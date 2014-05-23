@@ -11,7 +11,7 @@ module PgShrink
       @opts = opts
     end
 
-    def set_opts(opts)
+    def update_options(opts)
       @opts = @opts.merge(opts)
     end
 

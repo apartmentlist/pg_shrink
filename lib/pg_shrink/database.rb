@@ -11,7 +11,9 @@ module PgShrink
 
     def filter_table(table_name, opts = {})
       table = self.table(table_name)
-      table.set_opts(opts)
+      # we want to allow composability of filter specifications, so we always update
+      # existing options rather than overriding
+      table.update_options(opts)
       yield table
     end
 
