@@ -11,10 +11,13 @@ module PgSpecHelper
     `psql --username=#{user} --command="create database #{db_name};"`
   end
 
-  def self.drop_table(connection, table)
-    connection.run("drop table if exists #{table}")
+  def self.drop_table_if_exists(connection, table)
+    connection.run("drop table if exists #{table}") 
   end
+
   def self.create_table(connection, table, columns = {}, primary_key = :id)
+    # For ease of testing, whenever we create we want to override any previous tables
+    self.drop_table_if_exists(connection, table)
     primary_key = primary_key.to_sym
     columns = {primary_key=> 'serial primary key'}.merge(columns.symbolize_keys)
     sql = "create table #{table} (" +
