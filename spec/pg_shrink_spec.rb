@@ -10,10 +10,12 @@ describe PgShrink do
 
   describe "simple foreign_key setup" do
     before(:all) do
-      PgSpecHelper.create_table(database.connection, :users,
+      # Rspec doesn't want you using 'let' defined things in before(;all)
+      connection = PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :user => "postgres").connection
+      PgSpecHelper.create_table(connection, :users,
                                 {'name' => 'character varying(256)',
                                  'email' => 'character varying(256)'})
-      PgSpecHelper.create_table(database.connection, :user_preferences,
+      PgSpecHelper.create_table(connection, :user_preferences,
                                 {'user_id' => 'integer',
                                  'name' => 'character varying(256)',
                                  'value' => 'character varying(256)'})
@@ -99,7 +101,9 @@ describe PgShrink do
 
     describe "three table filter chain" do
       before(:all) do
-        PgSpecHelper.create_table(database.connection, :user_preference_values,
+        # Rspec doesn't want you using 'let' defined things in before(;all)
+        connection = PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :user => "postgres").connection
+        PgSpecHelper.create_table(connection, :user_preference_values,
                                   {'user_preference_id' => 'integer', 'value' =>
                                    'character varying(256)'})
       end
@@ -162,10 +166,12 @@ describe PgShrink do
   end
   describe "polymorphic foreign key subtables" do
     before(:all) do
-      PgSpecHelper.create_table(database.connection, :users,
+      # Rspec doesn't want you using 'let' defined things in before(;all)
+      connection = PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :user => "postgres").connection
+      PgSpecHelper.create_table(connection, :users,
                                 {'name' => 'character varying(256)',
                                  'email' => 'character varying(256)'})
-      PgSpecHelper.create_table(database.connection, :preferences,
+      PgSpecHelper.create_table(connection, :preferences,
                                 {'context_id' => 'integer',
                                  'context_type' => 'character varying(256)',
                                  'name' => 'character varying(256)',
