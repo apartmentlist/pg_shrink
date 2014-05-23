@@ -17,6 +17,11 @@ module PgShrink
       yield table
     end
 
+    def remove_table(table_name)
+      table = self.table(table_name)
+      table.mark_for_removal!
+    end
+
     # records_in_batches should yield a series of batches # of records.
     def records_in_batches(table_name)
       raise "implement in subclass"

@@ -62,11 +62,17 @@ describe PgShrink::Database::Postgres do
       it "can handle deletions in update records" do
         old_records = db.connection["select * from test_table where test <= 5"].all
         new_records = old_records.first(2)
-        db.update_records('test_table', old_records, new_records)
+        db.update_records(:test_table, old_records, new_records)
         expect(db.connection["select * from test_table where test <= 5"].all.size).to eq(2)
         updated_records = db.connection[:test_table].where(:id => old_records.map {|r| r[:id]}).all
         expect(updated_records.size).to eq(new_records.size)
         expect(updated_records).to eq(new_records)
+      end
+
+      it "delete the whole table" do
+        db.remove_table(:test_table)
+        db.filter!
+        expect(db.connection["select * from test_table"].all.size).to eq(0)
       end
     end
   end

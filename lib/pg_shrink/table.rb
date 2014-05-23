@@ -102,6 +102,12 @@ module PgShrink
       end
     end
 
+    # We use a filter for this, so that all other dependencies etc behave
+    # as would be expected.
+    def mark_for_removal!
+      self.filter_by { false }
+    end
+
     def primary_key
       self.opts[:primary_key] || :id
     end
