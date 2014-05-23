@@ -10,7 +10,8 @@ module PgShrink
       port: nil,
       username: 'postgres',
       password: nil,
-      database: 'test'
+      database: 'test',
+      batch_size: 10000
     }
 
     def connection_string
@@ -22,12 +23,11 @@ module PgShrink
     end
 
     def batch_size
-      @batch_size ||= 10000
+      @opts[:batch_size]
     end
 
     def initialize(opts)
       @opts = DEFAULT_OPTS.merge(opts.symbolize_keys)
-      @batch_size = opts[:batch_size]
       @connection = Sequel.connect(connection_string)
     end
 
