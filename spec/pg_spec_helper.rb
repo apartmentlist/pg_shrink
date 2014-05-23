@@ -7,7 +7,8 @@ module PgSpecHelper
   # TODO:  Should probably make the db name and user (and other access stuff in
   # test) easily configurable.  Or set up a vagrant instance to completely
   # standardize.
-  def self.create_database(db_name = 'test_pg_shrink', user = 'postgres')
+  def self.reset_database(db_name = 'test_pg_shrink', user = 'postgres')
+    `psql --username=#{user} --command="drop database #{db_name};"`
     `psql --username=#{user} --command="create database #{db_name};"`
   end
 

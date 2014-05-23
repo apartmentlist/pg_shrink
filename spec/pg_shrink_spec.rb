@@ -4,10 +4,8 @@ require 'pg_spec_helper'
 describe PgShrink do
   describe "simple two table filtering" do
     before(:all) do
-      PgSpecHelper.create_database
+      PgSpecHelper.reset_database
       connection = PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :user => "postgres").connection
-      PgSpecHelper.drop_table(connection, :users)
-      PgSpecHelper.drop_table(connection, :user_preferences)
       PgSpecHelper.create_table(connection, :users, {'name' => 'character varying(256)', 'email' => 'character varying(256)'})
       PgSpecHelper.create_table(connection, :user_preferences, {'user_id' => 'integer', 'name' => 'character varying(256)', 'value' => 'character varying(256)'})
     end

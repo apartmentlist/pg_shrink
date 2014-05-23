@@ -7,8 +7,7 @@ describe PgShrink::Database::Postgres do
   end
 
   before(:all) do
-    PgSpecHelper.create_database
-    PgSpecHelper.drop_table(db.connection, :test_table)
+    PgSpecHelper.reset_database
     PgSpecHelper.create_table(db.connection, :test_table, {'name' => 'character(128)', 'test' => 'integer'})
   end
 
@@ -50,10 +49,10 @@ describe PgShrink::Database::Postgres do
         expect(results.map {|r| r[:test]}).to match_array((6..20).to_a)
       end
 
-      it "can able to update records" do
+      it "can update records" do
         old_records = db.connection["select * from test_table where test <= 5"].all
         new_records = old_records.map {|r| r.merge(:test => r[:test] * 10)}
-        db.update_records('test_table', old_records, new_records)
+        db.update_records(:test_table, old_records, new_records)
         expect(db.connection["select * from test_table where test <= 5"].all.size).to eq(0)
         updated_records = db.connection[:test_table].where(:id => old_records.map {|r| r[:id]}).all
         expect(updated_records.size).to eq(old_records.size)
@@ -62,7 +61,7 @@ describe PgShrink::Database::Postgres do
 
       it "can handle deletions in update records" do
         old_records = db.connection["select * from test_table where test <= 5"].all
-        new_records = old_records[0..1]
+        new_records = old_records.first(2)
         db.update_records('test_table', old_records, new_records)
         expect(db.connection["select * from test_table where test <= 5"].all.size).to eq(2)
         updated_records = db.connection[:test_table].where(:id => old_records.map {|r| r[:id]}).all
