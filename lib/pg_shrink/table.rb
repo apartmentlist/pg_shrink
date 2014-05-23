@@ -87,7 +87,7 @@ module PgShrink
       end
     end
 
-    def run_sanitizers
+    def sanitize!
       self.sanitizers.each do |filter|
         self.records_in_batches do |batch|
           new_set = batch.map {|record| filter.apply(record.dup)}
@@ -103,7 +103,7 @@ module PgShrink
 
     def run
       filter!
-      run_sanitizers
+      sanitize!
     end
   end
 end

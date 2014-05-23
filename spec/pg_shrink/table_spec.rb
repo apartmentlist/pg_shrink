@@ -78,7 +78,7 @@ describe PgShrink::Table do
           expect(old_batch).to eq(test_data)
           expect(new_batch).to eq([{:u => -1}, {:u => -2}])
         end
-        table.run_sanitizers
+        table.sanitize!
       end
     end
   end
