@@ -30,7 +30,7 @@ describe PgShrink::Table do
           expect(new_batch.size).to eq(1)
           expect(new_batch.first).to eq({:u => 1})
         end
-        table.run_filters
+        table.filter!
       end
     end
 
@@ -47,7 +47,7 @@ describe PgShrink::Table do
           expect(new_batch.size).to eq(2)
           expect(new_batch).to eq([{:u => 1, :lock => false}, {:u => 2, :lock => true}])
         end
-        table.run_filters
+        table.filter!
       end
     end
   end
@@ -110,7 +110,7 @@ describe PgShrink::Table do
           expect(old_batch).to eq(test_data)
           expect(new_batch).to eq([{:u => true}])
         end
-        table.run_filters
+        table.filter!
       end
     end
   end

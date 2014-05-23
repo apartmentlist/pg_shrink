@@ -35,9 +35,9 @@ module PgShrink
       raise "implement in subclass"
     end
 
-    def run_filters
+    def filter!
       tables.values.each do |table|
-        table.run_filters
+        table.filter!
       end
     end
   end

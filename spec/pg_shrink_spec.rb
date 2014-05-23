@@ -32,7 +32,7 @@ describe PgShrink do
             end
             f.filter_subtable(:user_preferences, :foreign_key => :user_id)
           end
-          database.run_filters
+          database.filter!
         end
         it "will filter users down to the one matching" do
           remaining_users = database.connection.from(:users).all

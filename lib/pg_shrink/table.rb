@@ -74,7 +74,7 @@ module PgShrink
       end
     end
 
-    def run_filters
+    def filter!
       self.filters.each do |filter|
         self.records_in_batches do |batch|
           new_set = batch.select do |record|
@@ -102,7 +102,7 @@ module PgShrink
     end
 
     def run
-      run_filters
+      filter!
       run_sanitizers
     end
   end
