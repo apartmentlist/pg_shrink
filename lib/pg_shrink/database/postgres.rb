@@ -31,6 +31,8 @@ module PgShrink
       @connection = Sequel.connect(connection_string)
     end
 
+    # WARNING!  This assumes the database is not changing during run.  If
+    # requirements change we may need to insert a lock.
     def records_in_batches(table_name)
       table = self.table(table_name)
       primary_key = table.primary_key
