@@ -12,11 +12,11 @@ module PgShrink
       self.parent = parent
       self.table_name = table_name
       self.database = parent.database
-      @opts = self.default_opts.merge(opts)
+      @opts = default_opts.merge(opts)
     end
 
     def table
-      self.database.table(self.table_name)
+      database.table(self.table_name)
     end
 
     def propagate_filters(old_parent_data, new_parent_data)
