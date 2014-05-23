@@ -1,6 +1,7 @@
 module PgShrink
   require 'pg'
   require 'sequel'
+  require 'active_support/core_ext/enumerable'
   class Database::Postgres < Database
 
 
@@ -53,13 +54,8 @@ module PgShrink
       table = self.table(table_name)
       primary_key = table.primary_key
 
-      # no inject so we only create 1 object
-      old_records_by_key = {}
-      old_records.each {|r| old_records_by_key[r[primary_key]] = r}
-
-
-      new_records_by_key = {}
-      new_records.each {|r| new_records_by_key[r[primary_key]] = r}
+      old_records_by_key = old_records.index_by {|r| r[primary_key]}
+      new_records_by_key = new_records.index_by {|r| r[primary_key]}
 
       if (new_records_by_key.keys - old_records_by_key.keys).size > 1
         raise "Bad voodoo!  New records have primary keys not included in old records!"
