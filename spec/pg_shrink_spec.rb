@@ -40,15 +40,54 @@ describe PgShrink do
           end
           database.filter!
         end
+
         it "will filter users down to the one matching" do
           remaining_users = database.connection.from(:users).all
           expect(remaining_users.size).to  eq(1)
         end
+
         it "will filter preferences to only those associated with the user" do
           remaining_user = database.connection.from(:users).first
           remaining_preferences = database.connection.from(:user_preferences).all
           expect(remaining_preferences.size).to eq(3)
           expect(remaining_preferences.map {|u| u[:user_id]}.uniq).to eq([remaining_user[:id]])
+        end
+      end
+
+      describe "a simple filter and subtable with sanitization on each" do
+        before(:each) do
+          database.filter_table(:users) do |f|
+            f.filter_by do |u|
+              u[:name] == "test 1"
+            end
+            f.sanitize do |u|
+              u[:name] = "sanitized #{u[:name]}"
+              u[:email] = "blank_email#{u[:id]}@foo.bar"
+              u
+            end
+            f.filter_subtable(:user_preferences, :foreign_key => :user_id)
+          end
+          database.filter_table(:user_preferences) do |f|
+            f.sanitize do |u|
+              u[:value] = "sanitized #{u[:value]}"
+              u
+            end
+          end
+          database.shrink!
+        end
+
+        it "should result in 1 sanitized users" do
+          remaining_users = database.connection.from(:users).all
+          expect(remaining_users.size).to  eq(1)
+          expect(remaining_users.first[:name]).to match(/sanitized/)
+          expect(remaining_users.first[:email]).to match(/blank_email/)
+        end
+
+        it "should result in 3 sanitized preferences" do
+          remaining_user = database.connection.from(:users).first
+          remaining_preferences = database.connection.from(:user_preferences).all
+          expect(remaining_preferences.size).to eq(3)
+          expect(remaining_preferences.map {|u| u[:value]}.grep(/sanitized/).size).to eq(3)
         end
       end
     end

@@ -45,5 +45,16 @@ module PgShrink
         table.filter!
       end
     end
+
+    def sanitize!
+      tables.values.each do |table|
+        table.sanitize!
+      end
+    end
+
+    def shrink!
+      filter!
+      sanitize!
+    end
   end
 end
