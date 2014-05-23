@@ -5,22 +5,20 @@ module PgShrink
 
 
     attr_accessor :connection
-    def default_opts
-      {
-       host: 'localhost',
-       port: nil,
-       username: 'postgres',
-       password: nil,
-       database: 'test'
-      }
-    end
+    DEFAULT_OPTS = {
+      host: 'localhost',
+      port: nil,
+      username: 'postgres',
+      password: nil,
+      database: 'test'
+    }
 
     def connection_string
      str = "postgres://#{@opts[:user]}"
-     str = str + ":#{@opts[:password]}" if @opts[:password]
-     str = str + "@#{@opts[:host]}"
-     str = str + ":#{@opts[:port]}" if @opts[:port]
-     str = str + "/#{@opts[:database]}"
+     str << ":#{@opts[:password]}" if @opts[:password]
+     str << "@#{@opts[:host]}"
+     str << ":#{@opts[:port]}" if @opts[:port]
+     str << "/#{@opts[:database]}"
     end
 
     def batch_size
@@ -28,7 +26,7 @@ module PgShrink
     end
 
     def initialize(opts)
-      @opts = default_opts.merge(opts.symbolize_keys)
+      @opts = DEFAULT_OPTS.merge(opts.symbolize_keys)
       @batch_size = opts[:batch_size]
       @connection = Sequel.connect(connection_string)
     end
@@ -38,8 +36,10 @@ module PgShrink
       primary_key = table.primary_key
       max_id = self.connection["select max(#{primary_key}) from #{table_name}"].first[:max]
       i = 1;
-      while(i < max_id) do
-        batch = self.connection["select * from #{table_name} where #{primary_key} >= #{i} and #{primary_key} < #{i + batch_size}"].all
+      while i < max_id  do
+        sql = "select * from #{table_name} where " +
+                 "#{primary_key} >= #{i} and #{primary_key} < #{i + batch_size}"
+        batch = self.connection[sql].all
         yield(batch)
         i = i + batch_size
       end
@@ -58,6 +58,10 @@ module PgShrink
 
       new_records_by_key = {}
       new_records.each {|r| new_records_by_key[r[primary_key]] = r}
+
+      if (new_records_by_key.keys - old_records_by_key.keys).size > 1
+        raise "Bad voodoo!  New records have primary keys not included in old records!"
+      end
 
       deleted_record_ids =  old_records_by_key.keys - new_records_by_key.keys
       if deleted_record_ids.any?

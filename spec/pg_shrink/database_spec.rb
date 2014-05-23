@@ -2,6 +2,7 @@ require 'spec_helper'
 
 describe PgShrink::Database do
   let(:db) {PgShrink::Database.new}
+
   it "should yield a table to filter_table" do
     db.filter_table(:test_table) do |tb|
       expect(tb.class).to eq(PgShrink::Table)

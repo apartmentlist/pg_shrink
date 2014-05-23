@@ -3,28 +3,20 @@ module PgShrink
     attr_accessor :table_name
     attr_accessor :database
     attr_accessor :opts
+    attr_reader :filters, :sanitizers, :subtables
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
     def initialize(database, table_name, opts = {})
       self.table_name = table_name
       self.database = database
       @opts = opts
+      @filters = []
+      @sanitizers = []
+      @subtables = []
     end
 
     def update_options(opts)
       @opts = @opts.merge(opts)
-    end
-
-    def filters
-      @filters ||= []
-    end
-
-    def sanitizers
-      @sanitizers ||= []
-    end
-
-    def subtables
-      @subtables ||= []
     end
 
     def filter_by(opts = {}, &block)
@@ -49,13 +41,6 @@ module PgShrink
       self.sanitizers << TableSanitizer.new(self, opts, &block)
     end
 
-    def get_records(opts)
-      if self.database
-        database.get_records(self.table_name, opts)
-      else
-        []
-      end
-    end
     #  TODO:  Figure out if we need to distinguish between filters and
     #  sanitizers at this level?  IE does the callback need to enforce the
     #  difference between filtering and updating?

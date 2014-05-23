@@ -6,7 +6,7 @@ module PgShrink
 
     # table should return a unique table representation for this database.
     def table(table_name)
-      self.tables[table_name] ||= Table.new(self, table_name)
+      tables[table_name] ||= Table.new(self, table_name)
     end
 
     def filter_table(table_name, opts = {})
@@ -36,7 +36,7 @@ module PgShrink
     end
 
     def run_filters
-      self.tables.values.each do |table|
+      tables.values.each do |table|
         table.run_filters
       end
     end

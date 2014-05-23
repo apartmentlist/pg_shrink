@@ -4,6 +4,7 @@ describe PgShrink::Table do
   context "when a filter is specified" do
     let(:database) {PgShrink::Database.new}
     let(:table) { PgShrink::Table.new(database, :test_table) }
+
     before(:each) do
       table.filter_by {|test| test[:u] == 1 }
     end
@@ -32,10 +33,12 @@ describe PgShrink::Table do
         table.run_filters
       end
     end
+
     context "when locked" do
       before(:each) do
         table.lock { |test| !!test[:lock] }
       end
+
       it "should not filter locked records" do
         test_data = [{:u => 1, :lock => false}, {:u => 2, :lock => false}, {:u => 2, :lock => true}]
         allow(table).to receive(:records_in_batches).and_yield(test_data)
@@ -58,12 +61,15 @@ describe PgShrink::Table do
         test
       end
     end
+
     it "should add sanitizer to sanitizers array" do
       expect(table.sanitizers.size).to eq(1)
     end
+
     it "should alter values based on the block" do
       expect(table.sanitizers.first.apply({:u => 1})).to eq({:u => -1})
     end
+
     context "when running sanitizers" do
       it "returns an altered set of records" do
         test_data = [{:u => 1}, {:u => 2}]
@@ -76,12 +82,15 @@ describe PgShrink::Table do
       end
     end
   end
+
   context "when a subtable filter is specified" do
     let(:database) {PgShrink::Database.new}
     let(:table) { PgShrink::Table.new(database, :test_table) }
+
     before(:each) do
       table.filter_subtable(:subtable)
     end
+
     it "adds subtable to subtables array" do
       expect(table.subtables.size).to eq(1)
     end
@@ -92,6 +101,7 @@ describe PgShrink::Table do
           !!test[:u]
         end
       end
+
       it "runs subtable filters with old and new batches" do
         test_data = [{:u => true}, {:u => false}]
         expect(table).to receive(:records_in_batches).and_yield(test_data)
