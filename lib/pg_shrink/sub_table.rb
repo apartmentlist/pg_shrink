@@ -19,10 +19,6 @@ module PgShrink
       self.database.table(self.table_name)
     end
 
-    # TODO:  This kind of feels like it should actually use a TableFilter,
-    # but it's different because it relies on outside input.  Perhaps a
-    # TableFilter should be able to take additional arguments?  Or maybe this
-    # is good enough.
     def propagate_filters(old_parent_data, new_parent_data)
       old_batch_keys = old_parent_data.map {|record| record[@opts[:primary_key]]}
       new_batch_keys = new_parent_data.map {|record| record[@opts[:primary_key]]}
