@@ -167,7 +167,9 @@ describe PgShrink do
   describe "polymorphic foreign key subtables" do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(;all)
-      connection = PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :user => "postgres").connection
+      connection = PgShrink::Database::Postgres.new(:database =>
+                                                    'test_pg_shrink', :user =>
+                                                    "postgres").connection
       PgSpecHelper.create_table(connection, :users,
                                 {'name' => 'character varying(256)',
                                  'email' => 'character varying(256)'})
@@ -177,7 +179,7 @@ describe PgShrink do
                                  'name' => 'character varying(256)',
                                  'value' => 'character varying(256)'})
     end
-    describe "with 20 users, associated preferences, and some extra preferences for a different type" do
+    describe "with 20 users, associated preferences, and preferences for a different type" do
       before(:each) do
         PgSpecHelper.clear_table(database.connection, :users)
         PgSpecHelper.clear_table(database.connection, :preferences)
@@ -212,6 +214,68 @@ describe PgShrink do
         it "will not filter preferences without context_type user" do
           remaining_preferences = database.connection.from(:preferences).where(:context_type => 'OtherClass').all
           expect(remaining_preferences.size).to eq(20)
+        end
+      end
+
+      # is this just masochistic? ;P
+      describe "an extra layer of polymorphic subtables" do
+        before(:all) do
+          connection = PgShrink::Database::Postgres.new({
+            :database => 'test_pg_shrink', :user => "postgres"}
+          ).connection
+          PgSpecHelper.create_table(connection, :preference_dependents,
+                                    {'context_id' => 'integer',
+                                     'context_type' => 'character varying(256)',
+                                     'value' => 'character varying(256)'})
+        end
+
+        before(:each) do
+          PgSpecHelper.clear_table(database.connection, :preference_dependents)
+          prefs = database.connection.from(:preferences).all
+          prefs.each do |pref|
+            database.connection.run(
+              "insert into preference_dependents " +
+              "(context_id, context_type, value) " +
+              "values (#{pref[:id]}, 'Preference', 'depvalue#{pref[:id]}')")
+
+            database.connection.run(
+              "insert into preference_dependents " +
+              "(context_id, context_type, value) " +
+              "values (#{pref[:id]}, 'SomeOtherClass', 'fakevalue#{pref[:id]}')")
+
+          end
+
+          database.filter_table(:users) do |f|
+            f.filter_by do |u|
+              u[:name] == "test 1"
+            end
+            f.filter_subtable(:preferences, :foreign_key => :context_id,
+                              :type_key => :context_type, :type => 'User')
+          end
+
+          database.filter_table(:preferences) do |f|
+            f.filter_subtable(:preference_dependents,
+                              :foreign_key => :context_id,
+                              :type_key => :context_type,
+                              :type => 'Preference')
+          end
+          database.filter!
+        end
+
+        it "will filter preference dependents associated with preferences" do
+          remaining_preferences = database.connection.from(:preferences).all
+          remaining_dependents = database.connection.
+            from(:preference_dependents).
+            where(:context_type => 'Preference').all
+
+          expect(remaining_dependents.size).to eq(remaining_preferences.size)
+        end
+
+        it "will not filter preference dependents with different type" do
+          other_dependents = database.connection.
+            from(:preference_dependents).
+            where(:context_type => 'SomeOtherClass').all
+          expect(other_dependents.size).to eq(80)
         end
       end
     end
