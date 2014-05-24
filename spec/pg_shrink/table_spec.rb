@@ -40,12 +40,15 @@ describe PgShrink::Table do
       end
 
       it "should not filter locked records" do
-        test_data = [{:u => 1, :lock => false}, {:u => 2, :lock => false}, {:u => 2, :lock => true}]
+        test_data = [{:u => 1, :lock => false},
+                     {:u => 2, :lock => false},
+                     {:u => 2, :lock => true}]
         allow(table).to receive(:records_in_batches).and_yield(test_data)
         allow(table).to receive(:update_records) do |old_batch, new_batch|
           expect(old_batch.size).to eq(3)
           expect(new_batch.size).to eq(2)
-          expect(new_batch).to eq([{:u => 1, :lock => false}, {:u => 2, :lock => true}])
+          expect(new_batch).
+            to eq([{:u => 1, :lock => false}, {:u => 2, :lock => true}])
         end
         table.filter!
       end

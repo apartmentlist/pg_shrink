@@ -16,7 +16,8 @@ module PgSpecHelper
   end
 
   def self.create_table(connection, table, columns = {}, primary_key = :id)
-    # For ease of testing, whenever we create we want to override any previous tables
+    # For ease of testing, whenever we create we want to override any previous
+    # tables
     self.drop_table_if_exists(connection, table)
     primary_key = primary_key.to_sym
     columns = {primary_key=> 'serial primary key'}.merge(columns.symbolize_keys)

@@ -11,8 +11,8 @@ module PgShrink
 
     def filter_table(table_name, opts = {})
       table = self.table(table_name)
-      # we want to allow composability of filter specifications, so we always update
-      # existing options rather than overriding
+      # we want to allow composability of filter specifications, so we always
+      # update existing options rather than overriding
       table.update_options(opts)
       yield table
     end
@@ -27,7 +27,8 @@ module PgShrink
       raise "implement in subclass"
     end
 
-    # get_records should take a table name and options hash and return a specific set of records
+    # get_records should take a table name and options hash and return a
+    # specific set of records
     def get_records(table_name, opts)
       raise "implement in subclass"
     end
