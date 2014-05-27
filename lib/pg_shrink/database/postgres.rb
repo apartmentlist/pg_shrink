@@ -1,7 +1,6 @@
 module PgShrink
   require 'pg'
   require 'sequel'
-  require 'active_support/core_ext/enumerable'
   class Database::Postgres < Database
 
 

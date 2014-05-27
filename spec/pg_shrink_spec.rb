@@ -52,7 +52,7 @@ describe PgShrink do
             expect(PgShrink::Database::Postgres).to receive(:new) do |opts|
                 expect(opts[:postgres_url]).to eq(database.connection_string)
               end.and_return(database)
-            PgShrink.run(config: shrinkfile, url: url)
+            PgShrink.run(config: shrinkfile, url: url, force: true)
           end
         end
 
