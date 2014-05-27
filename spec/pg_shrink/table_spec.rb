@@ -94,6 +94,13 @@ describe PgShrink::Table do
       table.filter_subtable(:subtable)
     end
 
+    it "yields back a table so additional manipulations can be made" do
+      table.filter_subtable(:subtable) do |f|
+        expect(f.class).to eq(PgShrink::Table)
+        expect(f.table_name).to eq(:subtable)
+      end
+    end
+
     it "adds subtable to subtables array" do
       expect(table.subtables.size).to eq(1)
     end

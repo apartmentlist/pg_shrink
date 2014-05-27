@@ -24,7 +24,9 @@ module PgShrink
     end
 
     def filter_subtable(table_name, opts = {})
-      self.subtables << SubTable.new(self, table_name, opts)
+      subtable = SubTable.new(self, table_name, opts)
+      self.subtables << subtable
+      yield subtable.table if block_given?
     end
 
     def lock(opts = {}, &block)

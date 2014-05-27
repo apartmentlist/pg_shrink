@@ -39,6 +39,14 @@ filter_table :users do |f|
                                              :type_key => :context_type,
                                              :type => 'User')
 
+  # If it feels more natural, you can define additional filters
+  # or locks within a filter_subtable definitition
+  f.filter_subtable(:lockable_table, :foreign_key => :user_id) do |sub|
+    sub.lock do |u|
+      u[:locked] == true
+    end
+  end
+
   # To keep things consistent, if you're sanitizing something that also exists
   # in other places (ie tables aren't fully normalized, and you have email in 2
   # places), you probably need to be able to specify this somehow
