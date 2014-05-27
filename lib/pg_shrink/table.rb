@@ -24,7 +24,9 @@ module PgShrink
     end
 
     def filter_subtable(table_name, opts = {})
-      self.subtables << SubTable.new(self, table_name, opts)
+      subtable = SubTable.new(self, table_name, opts)
+      self.subtables << subtable
+      yield subtable.table if block_given?
     end
 
     def lock(opts = {}, &block)
@@ -102,11 +104,17 @@ module PgShrink
       end
     end
 
+    # We use a filter for this, so that all other dependencies etc behave
+    # as would be expected.
+    def mark_for_removal!
+      self.filter_by { false }
+    end
+
     def primary_key
       self.opts[:primary_key] || :id
     end
 
-    def run
+    def run!
       filter!
       sanitize!
     end
