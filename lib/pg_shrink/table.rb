@@ -114,7 +114,7 @@ module PgShrink
       self.opts[:primary_key] || :id
     end
 
-    def run!
+    def shrink!
       filter!
       sanitize!
     end

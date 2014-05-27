@@ -139,7 +139,7 @@ describe PgShrink::Table do
         expect(old_batch).to eq(test_data)
         expect(new_batch).to eq([])
       end
-      table.run!
+      table.shrink!
     end
 
     it "should allow locking of records" do
@@ -151,7 +151,7 @@ describe PgShrink::Table do
         expect(old_batch).to eq(test_data)
         expect(new_batch).to eq([{:u => 1}])
       end
-      table.run!
+      table.shrink!
     end
 
   end
