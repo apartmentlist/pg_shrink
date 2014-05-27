@@ -117,4 +117,35 @@ describe PgShrink::Table do
       end
     end
   end
+  context "when a remove is specified" do
+    let(:database) {PgShrink::Database.new}
+    let(:table) { PgShrink::Table.new(database, :test_table) }
+    let(:test_data) {[{:u => 1}, {:u => 2}]}
+
+    before(:each) do
+      table.mark_for_removal!
+    end
+
+    it "should by default remove all" do
+      expect(table).to receive(:records_in_batches).and_yield(test_data)
+      expect(table).to receive(:update_records) do |old_batch, new_batch|
+        expect(old_batch).to eq(test_data)
+        expect(new_batch).to eq([])
+      end
+      table.run!
+    end
+
+    it "should allow locking of records" do
+      table.lock do |u|
+        u[:u] == 1
+      end
+      expect(table).to receive(:records_in_batches).and_yield(test_data)
+      expect(table).to receive(:update_records) do |old_batch, new_batch|
+        expect(old_batch).to eq(test_data)
+        expect(new_batch).to eq([{:u => 1}])
+      end
+      table.run!
+    end
+
+  end
 end
