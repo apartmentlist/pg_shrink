@@ -33,6 +33,12 @@ filter_table :users do |f|
   f.filter_subtable(:email_preferences, :foreign_key => :user_email,
                                         :primary_key => :email)
 
+  # You can also filter by a polymorphic reference by specifying the
+  # type_key and type.
+  f.filter_subtable(:polymorphic_referneces, :foreign_key => :context_id,
+                                             :type_key => :context_type,
+                                             :type => 'User')
+
   # To keep things consistent, if you're sanitizing something that also exists
   # in other places (ie tables aren't fully normalized, and you have email in 2
   # places), you probably need to be able to specify this somehow
