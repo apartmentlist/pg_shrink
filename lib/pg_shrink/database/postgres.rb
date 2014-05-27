@@ -7,6 +7,7 @@ module PgShrink
 
     attr_accessor :connection
     DEFAULT_OPTS = {
+      postgres_url: nil,
       host: 'localhost',
       port: nil,
       username: 'postgres',
@@ -16,11 +17,15 @@ module PgShrink
     }
 
     def connection_string
-     str = "postgres://#{@opts[:user]}"
-     str << ":#{@opts[:password]}" if @opts[:password]
-     str << "@#{@opts[:host]}"
-     str << ":#{@opts[:port]}" if @opts[:port]
-     str << "/#{@opts[:database]}"
+     if @opts[:postgres_url]
+       @opts[:postgres_url]
+     else
+       str = "postgres://#{@opts[:user]}"
+       str << ":#{@opts[:password]}" if @opts[:password]
+       str << "@#{@opts[:host]}"
+       str << ":#{@opts[:port]}" if @opts[:port]
+       str << "/#{@opts[:database]}"
+     end
     end
 
     def batch_size

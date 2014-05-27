@@ -26,6 +26,7 @@ describe PgShrink do
                                  'value' => 'character varying(256)'})
     end
 
+
     describe "simple two table filtering" do
       describe "with 20 users and associated preferences" do
         before(:each) do
@@ -43,6 +44,18 @@ describe PgShrink do
             end
           end
         end
+        describe "with a test shrinkfile" do
+          let(:shrinkfile) {"spec/Shrinkfile.basic"}
+          let(:url) {database.connection_string}
+
+          it "should set up a postgres database" do
+            expect(PgShrink::Database::Postgres).to receive(:new) do |opts|
+                expect(opts[:postgres_url]).to eq(database.connection_string)
+              end.and_return(database)
+            PgShrink.run(config: shrinkfile, url: url)
+          end
+        end
+
 
         describe "a simple filter and subtable" do
           before(:each) do
