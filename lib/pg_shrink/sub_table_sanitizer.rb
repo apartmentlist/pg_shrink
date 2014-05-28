@@ -1,23 +1,31 @@
 module PgShrink
   class SubTableSanitizer < SubTableOperator
 
-    def table
-      database.table(self.table_name)
+    def validate_opts(opts)
+      unless opts[:local_field] && opts[:foreign_field]
+        raise "Error: #{name} must define :local_field and :foreign_field"
+      end
+      super(opts)
     end
 
     def propagate!(old_parent_data, new_parent_data)
-      old_batch_keys = old_parent_data.map {|record| record[@opts[:primary_key]]}
-      new_batch_keys = new_parent_data.map {|record| record[@opts[:primary_key]]}
+      old_batch = old_parent_data.index_by {|record| record[@opts[:primary_key]]}
+      new_batch = new_parent_data.index_by {|record| record[@opts[:primary_key]]}
 
       foreign_key = @opts[:foreign_key]
-      finder_options = {foreign_key => old_batch_keys}
+      finder_options = {foreign_key => old_batch.keys}
       if @opts[:type_key] && @opts[:type]
         finder_options[@opts[:type_key]] = @opts[:type]
       end
 
-      old_records = table.get_records(finder_options)
-      table.filter_batch(old_records) do |record|
-        new_batch_keys.include?(record[foreign_key])
+      parent_field = @opts[:local_field].to_sym
+      child_field = @opts[:foreign_field].to_sym
+
+      old_child_records = table.get_records(finder_options)
+      table.sanitize_batch(old_child_records) do |record|
+        parent_record = new_batch[record[foreign_key]]
+        record[child_field] = parent_record[parent_field]
+        record
       end
     end
 

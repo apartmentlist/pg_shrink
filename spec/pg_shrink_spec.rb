@@ -140,6 +140,10 @@ describe PgShrink do
               "insert into user_preferences (user_id, name, value) " +
               "values (#{u[:id]}, 'email', '#{u[:email]}')"
             )
+            database.connection.run(
+              "insert into user_preferences (user_id, name, value) " +
+              "values (#{u[:id]}, 'name', '#{u[:name]}')"
+            )
           end
         end
 
@@ -154,7 +158,8 @@ describe PgShrink do
                                   :foreign_key => :user_id,
                                   :local_field => :email,
                                   :foreign_field => :value,
-                                  :conditions => {:name => 'email'})
+                                  :type_key => :name,
+                                  :type => 'email')
             end
             database.shrink!
           end
@@ -164,6 +169,12 @@ describe PgShrink do
               from(:user_preferences).where(:name => 'email').all
             remaining_values = remaining_preferences.map {|p| p[:value]}
             expect(remaining_values.grep(/blank_email/).size).to eq(20)
+          end
+          it "should not sanitize preferences with a different type" do
+            remaining_preferences = database.connection.
+              from(:user_preferences).where(:name => 'name').all
+            remaining_values = remaining_preferences.map {|p| p[:value]}
+            expect(remaining_values.grep(/blank_email/).size).to eq(0)
           end
         end
       end

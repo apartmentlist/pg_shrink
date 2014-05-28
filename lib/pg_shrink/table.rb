@@ -44,7 +44,7 @@ module PgShrink
       self.sanitizers << TableSanitizer.new(self, opts, &block)
     end
 
-    def sanitize_subtable(table_name, opt = {})
+    def sanitize_subtable(table_name, opts = {})
       sanitizer = SubTableSanitizer.new(self, table_name, opts)
       self.subtable_sanitizers << sanitizer
       yield sanitizer.table if block_given?
@@ -83,12 +83,30 @@ module PgShrink
       end
     end
 
+    def sanitize_subtables(old_set, new_set)
+      self.subtable_sanitizers.each do |subtable_sanitizer|
+        subtable_sanitizer.propagate!(old_set, new_set)
+      end
+    end
+
     def filter_batch(batch, &filter_block)
       new_set = batch.select do |record|
         self.locked?(record) || filter_block.call(record.dup)
       end
-      self.update_records(batch, new_set)
-      self.filter_subtables(batch, new_set)
+      update_records(batch, new_set)
+      filter_subtables(batch, new_set)
+    end
+
+    def sanitize_batch(batch, &sanitize_block)
+      new_set = batch.map do |record|
+        if self.locked?(record)
+          record.dup
+        else
+          sanitize_block.call(record.dup)
+        end
+      end
+      update_records(batch, new_set)
+      sanitize_subtables(batch, new_set)
     end
 
     def filter!
@@ -102,11 +120,11 @@ module PgShrink
     end
 
     def sanitize!
-      self.sanitizers.each do |filter|
+      self.sanitizers.each do |sanitizer|
         self.records_in_batches do |batch|
-          new_set = batch.map {|record| filter.apply(record.dup)}
-          self.update_records(batch, new_set)
-          # TODO:  Trickle down any sanitization dependencies to subtables.
+          self.sanitize_batch(batch) do |record|
+            sanitizer.apply(record)
+          end
         end
       end
     end
