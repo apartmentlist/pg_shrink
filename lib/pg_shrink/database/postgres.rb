@@ -13,7 +13,7 @@ module PgShrink
       password: nil,
       database: 'test',
       batch_size: 10000
-    }
+    }.freeze
 
     def connection_string
      if @opts[:postgres_url]
