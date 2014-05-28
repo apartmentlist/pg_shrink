@@ -3,7 +3,7 @@ module PgShrink
     attr_accessor :table_name
     attr_accessor :database
     attr_accessor :opts
-    attr_reader :filters, :sanitizers, :subtables
+    attr_reader :filters, :sanitizers, :subtable_filterers, :subtable_sanitizers
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
     def initialize(database, table_name, opts = {})
@@ -12,7 +12,8 @@ module PgShrink
       @opts = opts
       @filters = []
       @sanitizers = []
-      @subtables = []
+      @subtable_filterers = []
+      @subtable_sanitizers = []
     end
 
     def update_options(opts)
@@ -24,9 +25,9 @@ module PgShrink
     end
 
     def filter_subtable(table_name, opts = {})
-      subtable = SubTable.new(self, table_name, opts)
-      self.subtables << subtable
-      yield subtable.table if block_given?
+      filterer = SubTableFilterer.new(self, table_name, opts)
+      self.subtable_filterers << filterer
+      yield filterer.table if block_given?
     end
 
     def lock(opts = {}, &block)
@@ -41,6 +42,12 @@ module PgShrink
 
     def sanitize(opts = {}, &block)
       self.sanitizers << TableSanitizer.new(self, opts, &block)
+    end
+
+    def sanitize_subtable(table_name, opt = {})
+      sanitizer = SubTableSanitizer.new(self, table_name, opts)
+      self.subtable_sanitizers << sanitizer
+      yield sanitizer.table if block_given?
     end
 
     #  TODO:  Figure out if we need to distinguish between filters and
@@ -71,8 +78,8 @@ module PgShrink
     end
 
     def filter_subtables(old_set, new_set)
-      self.subtables.each do |subtable|
-        subtable.propagate_filters(old_set, new_set)
+      self.subtable_filterers.each do |subtable_filterer|
+        subtable_filterer.propagate!(old_set, new_set)
       end
     end
 

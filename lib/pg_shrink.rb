@@ -7,7 +7,9 @@ require "pg_shrink/database"
 require "pg_shrink/database/postgres"
 require "pg_shrink/table_filter"
 require "pg_shrink/table_sanitizer"
-require "pg_shrink/sub_table"
+require "pg_shrink/sub_table_operator"
+require "pg_shrink/sub_table_filterer"
+require "pg_shrink/sub_table_sanitizer"
 require "pg_shrink/table"
 module PgShrink
 

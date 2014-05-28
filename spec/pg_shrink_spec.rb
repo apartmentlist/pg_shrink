@@ -28,6 +28,7 @@ describe PgShrink do
 
 
     describe "simple two table filtering" do
+
       describe "with 20 users and associated preferences" do
         before(:each) do
           PgSpecHelper.clear_table(database.connection, :users)
@@ -44,6 +45,7 @@ describe PgShrink do
             end
           end
         end
+
         describe "with a test shrinkfile" do
           let(:shrinkfile) {"spec/Shrinkfile.basic"}
           let(:url) {database.connection_string}
@@ -84,6 +86,7 @@ describe PgShrink do
         end
 
         describe "a simple filter and subtable with sanitization on each" do
+
           before(:each) do
             database.filter_table(:users) do |f|
               f.filter_by do |u|
@@ -122,6 +125,45 @@ describe PgShrink do
             expect(remaining_preferences.map {
               |u| u[:value]
             }.grep(/sanitized/).size).to eq(3)
+          end
+        end
+      end
+      describe "with users and preferences including email as value" do
+        before(:each) do
+          PgSpecHelper.clear_table(database.connection, :users)
+          PgSpecHelper.clear_table(database.connection, :user_preferences)
+          (1..20).each do |i|
+            database.connection.run("insert into users (name, email) " +
+                                    "values ('test #{i}', 'test#{i}@test.com')")
+            u = database.connection.from(:users).where(:name => "test #{i}").first
+            database.connection.run(
+              "insert into user_preferences (user_id, name, value) " +
+              "values (#{u[:id]}, 'email', '#{u[:email]}')"
+            )
+          end
+        end
+
+        describe "sanitizing subtable" do
+          before(:each) do
+            database.filter_table(:users) do |f|
+              f.sanitize do |u|
+                u[:email] = "blank_email#{u[:id]}@foo.bar"
+                u
+              end
+              f.sanitize_subtable(:user_preferences,
+                                  :foreign_key => :user_id,
+                                  :local_field => :email,
+                                  :foreign_field => :value,
+                                  :conditions => {:name => 'email'})
+            end
+            database.shrink!
+          end
+
+          it "should sanitize user preference emails" do
+            remaining_preferences = database.connection.
+              from(:user_preferences).where(:name => 'email').all
+            remaining_values = remaining_preferences.map {|p| p[:value]}
+            expect(remaining_values.grep(/blank_email/).size).to eq(20)
           end
         end
       end

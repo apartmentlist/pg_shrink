@@ -50,9 +50,9 @@ filter_table :users do |f|
   # To keep things consistent, if you're sanitizing something that also exists
   # in other places (ie tables aren't fully normalized, and you have email in 2
   # places), you probably need to be able to specify this somehow
-  f.propagate_sanitization(:email_preferences,
-                           :local_field => :email,
-                           :foreign_field => :user_email)
+  f.sanitize_subtable(:email_preferences,
+                      :local_field => :email,
+                      :foreign_field => :user_email)
 
 end
 
