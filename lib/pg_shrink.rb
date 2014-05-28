@@ -1,3 +1,4 @@
+require "uri"
 require "active_support"
 require "active_support/inflector"
 require 'active_support/core_ext/enumerable'
@@ -23,7 +24,10 @@ module PgShrink
 
   # TODO:  Some checking on format.
   def self.valid_pg_url?(url)
-    url.is_a?(String)
+    uri = URI.parse(url)
+    uri.scheme == 'postgres' && !uri.user.blank? && uri.path != '/'
+  rescue => ex
+    false
   end
 
   def self.run(options)
