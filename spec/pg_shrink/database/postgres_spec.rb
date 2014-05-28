@@ -3,8 +3,7 @@ require 'pg_spec_helper'
 
 describe PgShrink::Database::Postgres do
   let(:db) do
-    PgShrink::Database::Postgres.new(:database => 'test_pg_shrink',
-                                     :batch_size => 5, :user => 'postgres')
+    PgShrink::Database::Postgres.new(PgSpecHelper.pg_config.merge(:batch_size => 5))
   end
 
   before(:all) do

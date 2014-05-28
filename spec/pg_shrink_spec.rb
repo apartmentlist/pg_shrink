@@ -7,8 +7,7 @@ describe PgShrink do
   end
 
   let(:database) {
-    PgShrink::Database::Postgres.new(:database => 'test_pg_shrink',
-                                     :user => "postgres")
+    PgShrink::Database::Postgres.new(PgSpecHelper.pg_config)
   }
   after(:each) do
     database.connection.disconnect
@@ -17,9 +16,8 @@ describe PgShrink do
   describe "simple foreign_key setup" do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(;all)
-      connection = PgShrink::Database::Postgres.new({
-        :database => 'test_pg_shrink', :user => "postgres"
-      }).connection
+      connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
+                   connection
       PgSpecHelper.create_table(connection, :users,
                                 {'name' => 'character varying(256)',
                                  'email' => 'character varying(256)'})
@@ -187,9 +185,8 @@ describe PgShrink do
     describe "three table filter chain" do
       before(:all) do
         # Rspec doesn't want you using 'let' defined things in before(;all)
-        connection = PgShrink::Database::Postgres.new({
-          :database => 'test_pg_shrink', :user => "postgres"
-        }).connection
+        connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
+                     connection
         PgSpecHelper.create_table(connection, :user_preference_values,
                                   {'user_preference_id' => 'integer', 'value' =>
                                    'character varying(256)'})
@@ -269,9 +266,8 @@ describe PgShrink do
   describe "polymorphic foreign key subtables" do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(;all)
-      connection = PgShrink::Database::Postgres.new(:database =>
-                                                    'test_pg_shrink', :user =>
-                                                    "postgres").connection
+      connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
+                   connection
       PgSpecHelper.create_table(connection, :users,
                                 {'name' => 'character varying(256)',
                                  'email' => 'character varying(256)'})
@@ -332,9 +328,8 @@ describe PgShrink do
       # is this just masochistic? ;P
       describe "an extra layer of polymorphic subtables" do
         before(:all) do
-          connection = PgShrink::Database::Postgres.new({
-            :database => 'test_pg_shrink', :user => "postgres"}
-          ).connection
+          connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
+                       connection
           PgSpecHelper.create_table(connection, :preference_dependents,
                                     {'context_id' => 'integer',
                                      'context_type' => 'character varying(256)',
@@ -395,9 +390,8 @@ describe PgShrink do
   describe "has_and_belongs_to_many join tables" do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(;all)
-      connection = PgShrink::Database::Postgres.new({
-        :database => 'test_pg_shrink', :user => "postgres"
-      }).connection
+      connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
+                   connection
       PgSpecHelper.create_table(connection, :users,
                                 {'name' => 'character varying(256)',
                                  'email' => 'character varying(256)'})
