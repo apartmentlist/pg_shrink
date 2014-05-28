@@ -41,12 +41,12 @@ module PgShrink
 
     # TODO: Figure out how to write a spec for this.
     unless options[:force] == true
-      puts "WARNING:  pg_shrink is destructive!  It will change this database in place."
-      puts "Are you sure you want to continue? (y/N)"
+      puts 'WARNING:  pg_shrink is destructive!  It will change this database in place.'
+      puts 'Are you sure you want to continue? (y/N)'
       cont = gets
       cont = cont.strip
-      unless cont == "y" || cont == "Y"
-        puts "Aborting!"
+      unless cont == 'y' || cont == 'Y'
+        puts 'Aborting!'
         exit
       end
     end
