@@ -66,7 +66,7 @@ module PgShrink
 
       deleted_record_ids =  old_records_by_key.keys - new_records_by_key.keys
       if deleted_record_ids.any?
-        self.delete_records(table_name, {primary_key => deleted_record_ids})
+        raise "Bad voodoo!  Some records missing in new records!"
       end
 
       # TODO:  This can be optimized if performance is too slow.  Will impact

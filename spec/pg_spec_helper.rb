@@ -19,8 +19,12 @@ module PgSpecHelper
     # For ease of testing, whenever we create we want to override any previous
     # tables
     self.drop_table_if_exists(connection, table)
-    primary_key = primary_key.to_sym
-    columns = {primary_key=> 'serial primary key'}.merge(columns.symbolize_keys)
+    columns = if primary_key
+      primary_key = primary_key.to_sym
+      columns = {primary_key=> 'serial primary key'}.merge(columns.symbolize_keys)
+    else
+      columns.symbolize_keys
+    end
     sql = "create table #{table} (" +
       columns.map {|col, type| "#{col} #{type}"}.join(',') +
       ")"

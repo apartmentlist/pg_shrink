@@ -50,14 +50,24 @@ module PgShrink
       yield sanitizer.table if block_given?
     end
 
-    #  TODO:  Figure out if we need to distinguish between filters and
-    #  sanitizers at this level?  IE does the callback need to enforce the
-    #  difference between filtering and updating?
-    #
-    #  Or is it good enough that the database handles all of this?
     def update_records(original_records, new_records)
       if self.database
         database.update_records(self.table_name, original_records, new_records)
+      end
+    end
+
+    def delete_records(old_records, new_records)
+      if primary_key
+        deleted_keys = old_records.map {|r| r[primary_key]} -
+                       new_records.map {|r| r[primary_key]}
+        self.database.delete_records(table_name, primary_key => deleted_keys)
+      else
+        # TODO:  Do we need to speed this up?  Or is this an unusual enough
+        # case that we can leave it slow?
+        deleted_records = old_records - new_records
+        deleted_records.each do |rec|
+          self.database.delete_records(table_name, rec)
+        end
       end
     end
 
@@ -93,7 +103,7 @@ module PgShrink
       new_set = batch.select do |record|
         self.locked?(record) || filter_block.call(record.dup)
       end
-      update_records(batch, new_set)
+      delete_records(batch, new_set)
       filter_subtables(batch, new_set)
     end
 
@@ -135,8 +145,10 @@ module PgShrink
       self.filter_by { false }
     end
 
+    # Check explicitly for nil because we want to be able to set primary_key
+    # to false for e.g. join tables
     def primary_key
-      self.opts[:primary_key] || :id
+      opts[:primary_key].nil? ? :id : opts[:primary_key]
     end
 
     def shrink!

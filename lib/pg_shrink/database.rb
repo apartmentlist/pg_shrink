@@ -14,7 +14,7 @@ module PgShrink
       # we want to allow composability of filter specifications, so we always
       # update existing options rather than overriding
       table.update_options(opts)
-      yield table
+      yield table if block_given?
     end
 
     def remove_table(table_name)
@@ -34,10 +34,14 @@ module PgShrink
     end
 
     # The update_records method takes a set of original records and a new
-    # set of records.  It deletes any records that were in the original set but
-    # not the new set, and does any updates necessary between the new and old
-    # set.
+    # set of records.  It should throw an error if there are any records missing,
+    # so it should not be used for deletion.
     def update_records(table_name, old_records, new_records)
+      raise "implement in subclass"
+    end
+
+    # The delete_records method takes a table name and a condition to delete on.
+    def delete_records(table_name, condition)
       raise "implement in subclass"
     end
 

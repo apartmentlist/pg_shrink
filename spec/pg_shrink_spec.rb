@@ -10,6 +10,9 @@ describe PgShrink do
     PgShrink::Database::Postgres.new(:database => 'test_pg_shrink',
                                      :user => "postgres")
   }
+  after(:each) do
+    database.connection.disconnect
+  end
 
   describe "simple foreign_key setup" do
     before(:all) do
@@ -385,6 +388,77 @@ describe PgShrink do
             from(:preference_dependents).
             where(:context_type => 'SomeOtherClass').all
           expect(other_dependents.size).to eq(80)
+        end
+      end
+    end
+  end
+  describe "has_and_belongs_to_many join tables" do
+    before(:all) do
+      # Rspec doesn't want you using 'let' defined things in before(;all)
+      connection = PgShrink::Database::Postgres.new({
+        :database => 'test_pg_shrink', :user => "postgres"
+      }).connection
+      PgSpecHelper.create_table(connection, :users,
+                                {'name' => 'character varying(256)',
+                                 'email' => 'character varying(256)'})
+      PgSpecHelper.create_table(connection, :apartments_users,
+                                {'user_id' => 'integer',
+                                 'apartment_id' => 'integer'}, nil)
+      PgSpecHelper.create_table(connection, :apartments,
+                                {'name' => 'character varying(256)'})
+    end
+
+    describe "with 5 users, each with 2 apartments, and 1 apartment shared by all 5" do
+      before(:each) do
+        PgSpecHelper.clear_table(database.connection, :users)
+        PgSpecHelper.clear_table(database.connection, :apartments_users)
+        PgSpecHelper.clear_table(database.connection, :apartments)
+        database.connection.run("insert into apartments (name) values ('shared_apt')")
+        shared_apt = database.connection.from(:apartments).first
+        (1..5).each do |i|
+          database.connection.run(
+            "insert into users (name, email) " +
+            "values ('test #{i}', 'test#{i}@test.com')")
+          u = database.connection.from(:users).where(:name => "test #{i}").first
+          (1..2).each do |j|
+            database.connection.run(
+              "insert into apartments (name) values ('apartment #{i}#{j}')")
+          end
+          apartments = database.connection.from(:apartments).
+            where(:name => ["apartment #{i}1", "apartment #{i}2"]).all
+          ([shared_apt] + apartments).each do |apt|
+            database.connection.run(
+              "insert into apartments_users (user_id, apartment_id) " +
+              "values (#{u[:id]}, #{apt[:id]})")
+          end
+        end
+      end
+      describe "With a simple cascading filter" do
+        before(:each) do
+          database.filter_table(:users) do |f|
+            f.filter_by do |u|
+              u[:name] == "test 1"
+            end
+            f.filter_subtable(:apartments_users,
+                              :foreign_key => :user_id) do |t|
+              t.filter_subtable(:apartments, :foreign_key => :id,
+                                :primary_key => :apartment_id)
+            end
+          end
+          database.filter_table(:apartments_users, :primary_key => false)
+          database.shrink!
+        end
+
+        it "Should filter down apartments_users" do
+          u = database.connection.from(:users).where(:name => "test 1").first
+          remaining_join_table = database.connection.from(:apartments_users).all
+          expect(remaining_join_table.size).to eq(3)
+        end
+
+        it "Should filter apartments as well" do
+          remaining_join_table = database.connection.from(:apartments_users).all
+          remaining_apartments = database.connection.from(:apartments).all
+          expect(remaining_apartments.size).to eq(3)
         end
       end
     end

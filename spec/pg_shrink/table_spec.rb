@@ -25,7 +25,7 @@ describe PgShrink::Table do
       it "should return matching subset" do
         test_data = [{:u => 1}, {:u => 2}]
         expect(table).to receive(:records_in_batches).and_yield(test_data)
-        expect(table).to receive(:update_records) do |old_batch, new_batch|
+        expect(table).to receive(:delete_records) do |old_batch, new_batch|
           expect(old_batch.size).to eq(2)
           expect(new_batch.size).to eq(1)
           expect(new_batch.first).to eq({:u => 1})
@@ -44,7 +44,7 @@ describe PgShrink::Table do
                      {:u => 2, :lock => false},
                      {:u => 2, :lock => true}]
         allow(table).to receive(:records_in_batches).and_yield(test_data)
-        allow(table).to receive(:update_records) do |old_batch, new_batch|
+        allow(table).to receive(:delete_records) do |old_batch, new_batch|
           expect(old_batch.size).to eq(3)
           expect(new_batch.size).to eq(2)
           expect(new_batch).
@@ -115,7 +115,7 @@ describe PgShrink::Table do
       it "runs subtable filters with old and new batches" do
         test_data = [{:u => true}, {:u => false}]
         expect(table).to receive(:records_in_batches).and_yield(test_data)
-        expect(database).to receive(:update_records)
+        expect(database).to receive(:delete_records)
         expect(table).to receive(:filter_subtables) do |old_batch, new_batch|
           expect(old_batch).to eq(test_data)
           expect(new_batch).to eq([{:u => true}])
@@ -135,7 +135,7 @@ describe PgShrink::Table do
 
     it "should by default remove all" do
       expect(table).to receive(:records_in_batches).and_yield(test_data)
-      expect(table).to receive(:update_records) do |old_batch, new_batch|
+      expect(table).to receive(:delete_records) do |old_batch, new_batch|
         expect(old_batch).to eq(test_data)
         expect(new_batch).to eq([])
       end
@@ -147,7 +147,7 @@ describe PgShrink::Table do
         u[:u] == 1
       end
       expect(table).to receive(:records_in_batches).and_yield(test_data)
-      expect(table).to receive(:update_records) do |old_batch, new_batch|
+      expect(table).to receive(:delete_records) do |old_batch, new_batch|
         expect(old_batch).to eq(test_data)
         expect(new_batch).to eq([{:u => 1}])
       end
