@@ -60,7 +60,7 @@ module PgShrink
       old_records_by_key = old_records.index_by {|r| r[primary_key]}
       new_records_by_key = new_records.index_by {|r| r[primary_key]}
 
-      if (new_records_by_key.keys - old_records_by_key.keys).size > 1
+      if (new_records_by_key.keys - old_records_by_key.keys).size > 0
         raise "Bad voodoo!  New records have primary keys not in old records!"
       end
 
