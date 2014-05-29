@@ -1,0 +1,6 @@
+test:
+  database: test_pg_shrink
+  user: postgres
+  password:
+  host: localhost
+  port:

@@ -3,8 +3,7 @@ require 'pg_spec_helper'
 
 describe PgShrink::Database::Postgres do
   let(:db) do
-    PgShrink::Database::Postgres.new(:database => 'test_pg_shrink',
-                                     :batch_size => 5, :user => 'postgres')
+    PgShrink::Database::Postgres.new(PgSpecHelper.pg_config.merge(:batch_size => 5))
   end
 
   before(:all) do
@@ -69,19 +68,12 @@ describe PgShrink::Database::Postgres do
         expect(updated_records).to eq(new_records)
       end
 
-      it "can handle deletions in update records" do
+      it "throws an error if you try to delete records in update" do
         old_records = db.connection["select * from test_table where test <= 5"].
           all
         new_records = old_records.first(2)
-        db.update_records(:test_table, old_records, new_records)
-        expect(
-          db.connection["select * from test_table where test <= 5"].all.size
-        ).to eq(2)
-
-        updated_records = db.connection[:test_table].
-          where(:id => old_records.map {|r| r[:id]}).all
-        expect(updated_records.size).to eq(new_records.size)
-        expect(updated_records).to eq(new_records)
+        expect {db.update_records(:test_table, old_records, new_records)}.
+          to raise_error
       end
 
       it "deletes the whole table" do

@@ -27,7 +27,7 @@ Please make sure you have a Shrinkfile or specify one using -c
       options[:config] = config
     end
 
-    force_desc = "Force run without confirmation."
+    force_desc = 'Force run without confirmation.'
     opts.on('--force', force_desc) do
       options[:force] = true
     end
