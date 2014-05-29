@@ -13,7 +13,7 @@ describe PgShrink do
 
   describe "simple foreign_key setup" do
     before(:all) do
-      # Rspec doesn't want you using 'let' defined things in before(;all)
+      # Rspec doesn't want you using 'let' defined things in before(:all)
       connection = PgShrink::Database::Postgres.new({
         :database => 'test_pg_shrink', :user => "postgres"
       }).connection
@@ -72,7 +72,7 @@ describe PgShrink do
 
           it "will filter users down to the one matching" do
             remaining_users = database.connection.from(:users).all
-            expect(remaining_users.size).to  eq(1)
+            expect(remaining_users.size).to eq(1)
           end
 
           it "will filter preferences to only those associated with the user" do
@@ -122,9 +122,9 @@ describe PgShrink do
             remaining_preferences = database.connection.
               from(:user_preferences).all
             expect(remaining_preferences.size).to eq(3)
-            expect(remaining_preferences.map {
-              |u| u[:value]
-            }.grep(/sanitized/).size).to eq(3)
+            expect(remaining_preferences.all? do |p|
+              p[:value] =~ /sanitized/
+            end).to be_true
           end
         end
       end
@@ -183,7 +183,7 @@ describe PgShrink do
 
     describe "three table filter chain" do
       before(:all) do
-        # Rspec doesn't want you using 'let' defined things in before(;all)
+        # Rspec doesn't want you using 'let' defined things in before(:all)
         connection = PgShrink::Database::Postgres.new({
           :database => 'test_pg_shrink', :user => "postgres"
         }).connection
@@ -265,7 +265,7 @@ describe PgShrink do
   end
   describe "polymorphic foreign key subtables" do
     before(:all) do
-      # Rspec doesn't want you using 'let' defined things in before(;all)
+      # Rspec doesn't want you using 'let' defined things in before(:all)
       connection = PgShrink::Database::Postgres.new(:database =>
                                                     'test_pg_shrink', :user =>
                                                     "postgres").connection

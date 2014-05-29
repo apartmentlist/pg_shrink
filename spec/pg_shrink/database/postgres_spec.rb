@@ -84,7 +84,7 @@ describe PgShrink::Database::Postgres do
         expect(updated_records).to eq(new_records)
       end
 
-      it "delete the whole table" do
+      it "deletes the whole table" do
         db.remove_table(:test_table)
         db.filter!
         expect(db.connection["select * from test_table"].all.size).to eq(0)
