@@ -9,14 +9,14 @@ module PgShrink
     end
 
     def name
-      "#{table_name} #{self.class.name.demodulize}"
+      "#{table_name} #{self.class.name.demodulize} from #{parent.table_name}"
     end
 
     def table
       database.table(table_name)
     end
 
-    def validate_opts(opts)
+    def validate_opts!(opts)
       if opts[:type_key] && !opts[:type]
         raise "Error:  #{name} has type_key set but no type"
       end
@@ -31,7 +31,7 @@ module PgShrink
       self.database = parent.database
       @opts = default_opts.merge(opts)
 
-      validate_opts(@opts)
+      validate_opts!(@opts)
     end
 
     def propagate!(old_parent_data, new_parent_data)

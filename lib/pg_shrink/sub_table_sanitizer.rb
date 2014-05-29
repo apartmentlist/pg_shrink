@@ -1,7 +1,7 @@
 module PgShrink
   class SubTableSanitizer < SubTableOperator
 
-    def validate_opts(opts)
+    def validate_opts!(opts)
       unless opts[:local_field] && opts[:foreign_field]
         raise "Error: #{name} must define :local_field and :foreign_field"
       end
