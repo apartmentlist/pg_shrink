@@ -326,7 +326,6 @@ describe PgShrink do
         end
       end
 
-      # is this just masochistic? ;P
       describe "an extra layer of polymorphic subtables" do
         before(:all) do
           connection = PgShrink::Database::Postgres.new({
