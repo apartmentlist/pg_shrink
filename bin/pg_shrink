@@ -1,6 +1,44 @@
 #!/usr/bin/env ruby
+require 'optparse'
 
 $:.unshift(File.join(File.dirname(__FILE__), "/../lib"))
 require 'pg_shrink'
 
-puts "TODO:  Stuff"
+def parse_options!(options)
+  OptionParser.new do |opts|
+    banner = <<-TXT
+pg_shrink helps you shrink and sanitize your psql database!
+Please make sure you have a Shrinkfile or specify one using -c
+    TXT
+    opts.banner = banner
+
+    url_desc = '*REQUIRED* Specify URL to postgres database.  WARNING:  ' +
+              'This database should be a backup and not be changing at the ' +
+              'time pg_shrink is run.  It will be modified in place.'
+    opts.on('-u', '--url URL', url_desc) do |url|
+      options[:url] = url
+    end
+
+    config_desc = '(Optional) Specify configuration file for how to shrink.  ' +
+                  '  Will default to Shrinkfile in directory command is being ' +
+                  'run from'
+              'time pg_shrink is run.  It will be modified in place.'
+    opts.on('-c', '--config Shrinkfile', config_desc) do |config|
+      options[:config] = config
+    end
+
+    force_desc = "Force run without confirmation."
+    opts.on('--force', force_desc) do
+      options[:force] = true
+    end
+
+
+    opts.on('-h', '--help', 'Show this message and exit') do |h|
+      puts opts
+      exit
+    end
+  end.parse!
+end
+options = PgShrink.blank_options
+parse_options!(options)
+PgShrink.run(options)

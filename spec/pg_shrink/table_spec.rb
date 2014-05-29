@@ -40,12 +40,15 @@ describe PgShrink::Table do
       end
 
       it "should not filter locked records" do
-        test_data = [{:u => 1, :lock => false}, {:u => 2, :lock => false}, {:u => 2, :lock => true}]
+        test_data = [{:u => 1, :lock => false},
+                     {:u => 2, :lock => false},
+                     {:u => 2, :lock => true}]
         allow(table).to receive(:records_in_batches).and_yield(test_data)
         allow(table).to receive(:update_records) do |old_batch, new_batch|
           expect(old_batch.size).to eq(3)
           expect(new_batch.size).to eq(2)
-          expect(new_batch).to eq([{:u => 1, :lock => false}, {:u => 2, :lock => true}])
+          expect(new_batch).
+            to eq([{:u => 1, :lock => false}, {:u => 2, :lock => true}])
         end
         table.filter!
       end
@@ -91,8 +94,15 @@ describe PgShrink::Table do
       table.filter_subtable(:subtable)
     end
 
-    it "adds subtable to subtables array" do
-      expect(table.subtables.size).to eq(1)
+    it "yields back a table so additional manipulations can be made" do
+      table.filter_subtable(:subtable) do |f|
+        expect(f.class).to eq(PgShrink::Table)
+        expect(f.table_name).to eq(:subtable)
+      end
+    end
+
+    it "adds subtable_filter to subtable_filters array" do
+      expect(table.subtable_filters.size).to eq(1)
     end
 
     describe "when running filters" do
@@ -113,5 +123,36 @@ describe PgShrink::Table do
         table.filter!
       end
     end
+  end
+  context "when a remove is specified" do
+    let(:database) {PgShrink::Database.new}
+    let(:table) { PgShrink::Table.new(database, :test_table) }
+    let(:test_data) {[{:u => 1}, {:u => 2}]}
+
+    before(:each) do
+      table.mark_for_removal!
+    end
+
+    it "should by default remove all" do
+      expect(table).to receive(:records_in_batches).and_yield(test_data)
+      expect(table).to receive(:update_records) do |old_batch, new_batch|
+        expect(old_batch).to eq(test_data)
+        expect(new_batch).to eq([])
+      end
+      table.shrink!
+    end
+
+    it "should allow locking of records" do
+      table.lock do |u|
+        u[:u] == 1
+      end
+      expect(table).to receive(:records_in_batches).and_yield(test_data)
+      expect(table).to receive(:update_records) do |old_batch, new_batch|
+        expect(old_batch).to eq(test_data)
+        expect(new_batch).to eq([{:u => 1}])
+      end
+      table.shrink!
+    end
+
   end
 end

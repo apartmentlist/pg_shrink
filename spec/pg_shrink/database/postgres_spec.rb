@@ -3,12 +3,14 @@ require 'pg_spec_helper'
 
 describe PgShrink::Database::Postgres do
   let(:db) do
-    PgShrink::Database::Postgres.new(:database => 'test_pg_shrink', :batch_size => 5, :user => 'postgres')
+    PgShrink::Database::Postgres.new(:database => 'test_pg_shrink',
+                                     :batch_size => 5, :user => 'postgres')
   end
 
   before(:all) do
     PgSpecHelper.reset_database
-    PgSpecHelper.create_table(db.connection, :test_table, {'name' => 'character(128)', 'test' => 'integer'})
+    PgSpecHelper.create_table(db.connection, :test_table,
+                              {'name' => 'character(128)', 'test' => 'integer'})
   end
 
   before(:each) do
@@ -23,7 +25,9 @@ describe PgShrink::Database::Postgres do
     context "with 20 simple records" do
       before(:each) do
         (1..20).each do |i|
-          db.connection.run("insert into test_table (name, test) values ('test', #{i})")
+          db.connection.run(
+            "insert into test_table (name, test) values ('test', #{i})"
+          )
         end
       end
 
@@ -36,9 +40,11 @@ describe PgShrink::Database::Postgres do
       end
 
       it "throws an error if records change their primary keys during update" do
-        old_records = db.connection["select * from test_table where test <= 5"].all
+        old_records = db.connection["select * from test_table where test <= 5"].
+          all
         new_records = old_records.map {|r| r.merge(:id => r[:id] * 10)}
-        expect {db.update_records(:test_table, old_records, new_records)}.to raise_error
+        expect {db.update_records(:test_table, old_records, new_records)}.
+          to raise_error
       end
 
       it "can delete records based on a condition" do
@@ -50,23 +56,38 @@ describe PgShrink::Database::Postgres do
       end
 
       it "can update records" do
-        old_records = db.connection["select * from test_table where test <= 5"].all
+        old_records = db.connection["select * from test_table where test <= 5"].
+          all
         new_records = old_records.map {|r| r.merge(:test => r[:test] * 10)}
         db.update_records(:test_table, old_records, new_records)
-        expect(db.connection["select * from test_table where test <= 5"].all.size).to eq(0)
-        updated_records = db.connection[:test_table].where(:id => old_records.map {|r| r[:id]}).all
+        expect(
+          db.connection["select * from test_table where test <= 5"].all.size
+        ).to eq(0)
+        updated_records = db.connection[:test_table].
+          where(:id => old_records.map {|r| r[:id]}).all
         expect(updated_records.size).to eq(old_records.size)
         expect(updated_records).to eq(new_records)
       end
 
       it "can handle deletions in update records" do
-        old_records = db.connection["select * from test_table where test <= 5"].all
+        old_records = db.connection["select * from test_table where test <= 5"].
+          all
         new_records = old_records.first(2)
-        db.update_records('test_table', old_records, new_records)
-        expect(db.connection["select * from test_table where test <= 5"].all.size).to eq(2)
-        updated_records = db.connection[:test_table].where(:id => old_records.map {|r| r[:id]}).all
+        db.update_records(:test_table, old_records, new_records)
+        expect(
+          db.connection["select * from test_table where test <= 5"].all.size
+        ).to eq(2)
+
+        updated_records = db.connection[:test_table].
+          where(:id => old_records.map {|r| r[:id]}).all
         expect(updated_records.size).to eq(new_records.size)
         expect(updated_records).to eq(new_records)
+      end
+
+      it "deletes the whole table" do
+        db.remove_table(:test_table)
+        db.filter!
+        expect(db.connection["select * from test_table"].all.size).to eq(0)
       end
     end
   end

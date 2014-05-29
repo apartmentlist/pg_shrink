@@ -11,10 +11,15 @@ module PgShrink
 
     def filter_table(table_name, opts = {})
       table = self.table(table_name)
-      # we want to allow composability of filter specifications, so we always update
-      # existing options rather than overriding
+      # we want to allow composability of filter specifications, so we always
+      # update existing options rather than overriding
       table.update_options(opts)
       yield table
+    end
+
+    def remove_table(table_name)
+      table = self.table(table_name)
+      table.mark_for_removal!
     end
 
     # records_in_batches should yield a series of batches # of records.
@@ -22,7 +27,8 @@ module PgShrink
       raise "implement in subclass"
     end
 
-    # get_records should take a table name and options hash and return a specific set of records
+    # get_records should take a table name and options hash and return a
+    # specific set of records
     def get_records(table_name, opts)
       raise "implement in subclass"
     end
@@ -36,9 +42,16 @@ module PgShrink
     end
 
     def filter!
-      tables.values.each do |table|
-        table.filter!
-      end
+      tables.values.each(&:filter!)
+    end
+
+    def sanitize!
+      tables.values.each(&:sanitize!)
+    end
+
+    def shrink!
+      filter!
+      sanitize!
     end
   end
 end

@@ -1,12 +1,12 @@
 module PgShrink
   require 'pg'
   require 'sequel'
-  require 'active_support/core_ext/enumerable'
   class Database::Postgres < Database
 
 
     attr_accessor :connection
     DEFAULT_OPTS = {
+      postgres_url: nil,
       host: 'localhost',
       port: nil,
       username: 'postgres',
@@ -16,11 +16,15 @@ module PgShrink
     }
 
     def connection_string
-     str = "postgres://#{@opts[:user]}"
-     str << ":#{@opts[:password]}" if @opts[:password]
-     str << "@#{@opts[:host]}"
-     str << ":#{@opts[:port]}" if @opts[:port]
-     str << "/#{@opts[:database]}"
+     if @opts[:postgres_url]
+       @opts[:postgres_url]
+     else
+       str = "postgres://#{@opts[:user]}"
+       str << ":#{@opts[:password]}" if @opts[:password]
+       str << "@#{@opts[:host]}"
+       str << ":#{@opts[:port]}" if @opts[:port]
+       str << "/#{@opts[:database]}"
+     end
     end
 
     def batch_size
@@ -37,7 +41,8 @@ module PgShrink
     def records_in_batches(table_name)
       table = self.table(table_name)
       primary_key = table.primary_key
-      max_id = self.connection["select max(#{primary_key}) from #{table_name}"].first[:max]
+      max_id = self.connection["select max(#{primary_key}) from #{table_name}"].
+                    first[:max]
       i = 1;
       while i < max_id  do
         sql = "select * from #{table_name} where " +
@@ -55,8 +60,8 @@ module PgShrink
       old_records_by_key = old_records.index_by {|r| r[primary_key]}
       new_records_by_key = new_records.index_by {|r| r[primary_key]}
 
-      if (new_records_by_key.keys - old_records_by_key.keys).size > 1
-        raise "Bad voodoo!  New records have primary keys not included in old records!"
+      if (new_records_by_key.keys - old_records_by_key.keys).size > 0
+        raise "Bad voodoo!  New records have primary keys not in old records!"
       end
 
       deleted_record_ids =  old_records_by_key.keys - new_records_by_key.keys
@@ -64,8 +69,8 @@ module PgShrink
         self.delete_records(table_name, {primary_key => deleted_record_ids})
       end
 
-      # TODO:  This can be optimized if performance is too slow.  Will impact the
-      # speed of sanitizing the already-filtered dataset.
+      # TODO:  This can be optimized if performance is too slow.  Will impact
+      # the speed of sanitizing the already-filtered dataset.
       new_records.each do |rec|
         if old_records_by_key[rec[primary_key]] != rec
           self.connection.from(table_name).

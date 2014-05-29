@@ -3,7 +3,7 @@ module PgShrink
     attr_accessor :table_name
     attr_accessor :database
     attr_accessor :opts
-    attr_reader :filters, :sanitizers, :subtables
+    attr_reader :filters, :sanitizers, :subtable_filters, :subtable_sanitizers
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
     def initialize(database, table_name, opts = {})
@@ -12,7 +12,8 @@ module PgShrink
       @opts = opts
       @filters = []
       @sanitizers = []
-      @subtables = []
+      @subtable_filters = []
+      @subtable_sanitizers = []
     end
 
     def update_options(opts)
@@ -24,7 +25,9 @@ module PgShrink
     end
 
     def filter_subtable(table_name, opts = {})
-      self.subtables << SubTable.new(self, table_name, opts)
+      filter = SubTableFilter.new(self, table_name, opts)
+      self.subtable_filters << filter
+      yield filter.table if block_given?
     end
 
     def lock(opts = {}, &block)
@@ -39,6 +42,12 @@ module PgShrink
 
     def sanitize(opts = {}, &block)
       self.sanitizers << TableSanitizer.new(self, opts, &block)
+    end
+
+    def sanitize_subtable(table_name, opts = {})
+      sanitizer = SubTableSanitizer.new(self, table_name, opts)
+      self.subtable_sanitizers << sanitizer
+      yield sanitizer.table if block_given?
     end
 
     #  TODO:  Figure out if we need to distinguish between filters and
@@ -69,17 +78,35 @@ module PgShrink
     end
 
     def filter_subtables(old_set, new_set)
-      self.subtables.each do |subtable|
-        subtable.propagate_filters(old_set, new_set)
+      self.subtable_filters.each do |subtable_filter|
+        subtable_filter.propagate!(old_set, new_set)
+      end
+    end
+
+    def sanitize_subtables(old_set, new_set)
+      self.subtable_sanitizers.each do |subtable_sanitizer|
+        subtable_sanitizer.propagate!(old_set, new_set)
       end
     end
 
     def filter_batch(batch, &filter_block)
       new_set = batch.select do |record|
-        self.locked?(record) || filter_block.call(record.dup)
+        locked?(record) || filter_block.call(record.dup)
       end
-      self.update_records(batch, new_set)
-      self.filter_subtables(batch, new_set)
+      update_records(batch, new_set)
+      filter_subtables(batch, new_set)
+    end
+
+    def sanitize_batch(batch, &sanitize_block)
+      new_set = batch.map do |record|
+        if locked?(record)
+          record.dup
+        else
+          sanitize_block.call(record.dup)
+        end
+      end
+      update_records(batch, new_set)
+      sanitize_subtables(batch, new_set)
     end
 
     def filter!
@@ -93,20 +120,26 @@ module PgShrink
     end
 
     def sanitize!
-      self.sanitizers.each do |filter|
+      self.sanitizers.each do |sanitizer|
         self.records_in_batches do |batch|
-          new_set = batch.map {|record| filter.apply(record.dup)}
-          self.update_records(batch, new_set)
-          # TODO:  Trickle down any sanitization dependencies to subtables.
+          self.sanitize_batch(batch) do |record|
+            sanitizer.apply(record)
+          end
         end
       end
+    end
+
+    # We use a filter for this, so that all other dependencies etc behave
+    # as would be expected.
+    def mark_for_removal!
+      self.filter_by { false }
     end
 
     def primary_key
       self.opts[:primary_key] || :id
     end
 
-    def run
+    def shrink!
       filter!
       sanitize!
     end
