@@ -101,8 +101,8 @@ describe PgShrink::Table do
       end
     end
 
-    it "adds subtable_filterer to subtable_filterers array" do
-      expect(table.subtable_filterers.size).to eq(1)
+    it "adds subtable_filter to subtable_filters array" do
+      expect(table.subtable_filters.size).to eq(1)
     end
 
     describe "when running filters" do
