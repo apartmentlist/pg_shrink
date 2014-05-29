@@ -15,7 +15,12 @@ module PgSpecHelper
   end
 
   def self.pg_config
-    @pg_config ||= YAML.load_file('spec/pg_config.yml')['test']
+    @pg_config ||= if File.exists?('spec/pg_config.yml')
+      YAML.load_file('spec/pg_config.yml')['test']
+    else
+      {"database"=>"test_pg_shrink", "user"=>"postgres", "password"=>nil,
+       "host"=>"localhost", "port"=>nil}
+    end
   end
 
   def self.drop_table_if_exists(connection, table)
