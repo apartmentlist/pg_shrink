@@ -1,5 +1,5 @@
 module PgShrink
-  class SubTableFilterer < SubTableOperator
+  class SubTableFilter < SubTableOperator
 
     def propagate!(old_parent_data, new_parent_data)
       old_batch_keys = old_parent_data.map {|record| record[@opts[:primary_key]]}
