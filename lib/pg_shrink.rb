@@ -22,7 +22,6 @@ module PgShrink
     }
   end
 
-  # TODO:  Some checking on format.
   def self.valid_pg_url?(url)
     uri = URI.parse(url)
     uri.scheme == 'postgres' && !uri.user.blank? && uri.path != '/'
@@ -51,7 +50,7 @@ module PgShrink
       cont = cont.strip
       unless cont == 'y' || cont == 'Y'
         puts 'Aborting!'
-        exit
+        exit 1
       end
     end
 
