@@ -9,6 +9,7 @@ module PgShrink
     end
 
     def propagate!(old_parent_data, new_parent_data)
+      return if (old_parent_data.empty? && new_parent_data.empty?)
       old_batch = old_parent_data.index_by {|record| record[@opts[:primary_key]]}
       new_batch = new_parent_data.index_by {|record| record[@opts[:primary_key]]}
 
