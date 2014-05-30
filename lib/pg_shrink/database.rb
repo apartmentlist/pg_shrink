@@ -17,8 +17,9 @@ module PgShrink
       yield table if block_given?
     end
 
-    def remove_table(table_name)
+    def remove_table(table_name, opts = {})
       table = self.table(table_name)
+      table.update_options(opts)
       table.mark_for_removal!
     end
 
