@@ -60,7 +60,9 @@ module PgShrink
       if primary_key
         deleted_keys = old_records.map {|r| r[primary_key]} -
                        new_records.map {|r| r[primary_key]}
-        self.database.delete_records(table_name, primary_key => deleted_keys)
+        if deleted_keys.any?
+          self.database.delete_records(table_name, primary_key => deleted_keys)
+        end
       else
         # TODO:  Do we need to speed this up?  Or is this an unusual enough
         # case that we can leave it slow?

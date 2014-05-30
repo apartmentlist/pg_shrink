@@ -47,6 +47,14 @@ describe PgShrink do
           end
         end
 
+        it "Should not run delete if there is nothing filtered" do
+          database.filter_table(:users) do |f|
+            f.filter_by {true}
+          end
+          expect(database).not_to receive(:delete_records)
+          database.shrink!
+        end
+
         describe "with a test shrinkfile" do
           let(:shrinkfile) {"spec/Shrinkfile.basic"}
           let(:url) {database.connection_string}
