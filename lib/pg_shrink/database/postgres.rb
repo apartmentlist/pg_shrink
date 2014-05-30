@@ -41,6 +41,9 @@ module PgShrink
     def records_in_batches(table_name)
       table = self.table(table_name)
       primary_key = table.primary_key
+      unless primary_key
+        raise "Error:  Records in batches called on table without a primary key"
+      end
       max_id = self.connection["select max(#{primary_key}) from #{table_name}"].
                     first[:max]
       i = 1;

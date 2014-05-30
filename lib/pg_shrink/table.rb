@@ -120,10 +120,14 @@ module PgShrink
     end
 
     def filter!
-      self.filters.each do |filter|
-        self.records_in_batches do |batch|
-          self.filter_batch(batch) do |record|
-            filter.apply(record)
+      if remove? && can_just_remove?
+        remove!
+      else
+        self.filters.each do |filter|
+          self.records_in_batches do |batch|
+            self.filter_batch(batch) do |record|
+              filter.apply(record)
+            end
           end
         end
       end
@@ -139,10 +143,24 @@ module PgShrink
       end
     end
 
-    # We use a filter for this, so that all other dependencies etc behave
-    # as would be expected.
+    def can_just_remove?
+      self.subtable_filters.empty? && self.subtable_sanitizers.empty? && !@lock
+    end
+
+    # Mark @remove and add filter so that if we're in the simple case we can
+    # just remove! and if not we can just go through filters and all
+    # dependencies will be handled
     def mark_for_removal!
+      @remove = true
       self.filter_by { false }
+    end
+
+    def remove?
+      !!@remove
+    end
+
+    def remove!
+      self.database.delete_records(table_name, {})
     end
 
     # Check explicitly for nil because we want to be able to set primary_key

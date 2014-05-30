@@ -133,12 +133,8 @@ describe PgShrink::Table do
       table.mark_for_removal!
     end
 
-    it "should by default remove all" do
-      expect(table).to receive(:records_in_batches).and_yield(test_data)
-      expect(table).to receive(:delete_records) do |old_batch, new_batch|
-        expect(old_batch).to eq(test_data)
-        expect(new_batch).to eq([])
-      end
+    it "should run remove! if there are no dependencies" do
+      expect(table).to receive(:remove!)
       table.shrink!
     end
 
