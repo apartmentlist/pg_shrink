@@ -81,6 +81,28 @@ describe PgShrink::Database::Postgres do
         db.filter!
         expect(db.connection["select * from test_table"].all.size).to eq(0)
       end
+      describe "on a table with no primary key" do
+        before(:all) do
+          PgSpecHelper.create_table(db.connection, :no_primary_key,
+                              {'name' => 'character(128)',
+                               'test' => 'integer'}, nil)
+        end
+        before(:each) do
+          (1..20).each do |i|
+            db.connection.run(
+              "insert into no_primary_key (name, test) values ('test', #{i})"
+            )
+        end
+
+        end
+
+        it "can still remove the whole table" do
+          db.remove_table(:no_primary_key, :primary_key => false)
+          db.filter!
+          expect(db.connection["select * from no_primary_key"].all.size).to eq(0)
+
+          end
+      end
     end
   end
 end
