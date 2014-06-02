@@ -18,7 +18,8 @@ module PgShrink
     {
       url: nil,
       config: 'Shrinkfile',
-      force: false
+      force: false,
+      batch_size: 10000
     }
   end
 
@@ -53,8 +54,13 @@ module PgShrink
     end
 
     validate_pg_url!(options[:url])
+    batch_size = options[:batch_size].to_i
+    unless batch_size >= 1
+      abort("Batch size must be at least 1.  #{options[:batch_size]} is invalid!")
+    end
 
-    database = Database::Postgres.new(:postgres_url => options[:url])
+    database = Database::Postgres.new(:postgres_url => options[:url],
+                                      :batch_size => batch_size)
 
     database.instance_eval(File.read(options[:config]), options[:config], 1)
 

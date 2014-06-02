@@ -13,6 +13,13 @@ describe PgShrink do
     database.connection.disconnect
   end
 
+
+  it "should let you specify a different batch size" do
+    opts = PgSpecHelper.pg_config.merge(:batch_size => 20000)
+    db = PgShrink::Database::Postgres.new(opts)
+    expect(db.batch_size).to eq(20000)
+  end
+
   describe "simple foreign_key setup" do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(:all)
@@ -63,7 +70,7 @@ describe PgShrink do
             expect(PgShrink::Database::Postgres).to receive(:new) do |opts|
                 expect(opts[:postgres_url]).to eq(database.connection_string)
               end.and_return(database)
-            PgShrink.run(config: shrinkfile, url: url, force: true)
+            PgShrink.run(config: shrinkfile, url: url, force: true, batch_size: 5)
           end
         end
 
