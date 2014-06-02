@@ -22,21 +22,37 @@ module PgShrink
     }
   end
 
-  def self.valid_pg_url?(url)
+  def self.validate_pg_url!(url)
+    if url.blank?
+      abort("Error loading postgres: " +
+            "Please specify postgres url using -u <postgres_url>")
+    end
     uri = URI.parse(url)
-    uri.scheme == 'postgres' && !uri.user.blank? && uri.path != '/'
+    if uri.scheme == 'postgres' && !uri.user.blank? && uri.path != '/'
+      return true
+    else
+      abort("Error loading postgres: " +
+            "#{url} is not a valid postgres url")
+    end
   rescue => ex
-    false
+    abort(
+      "Error loading postgres: " +
+      "#{url} is not a valid postgres url"
+    )
   end
 
   def self.run(options)
     unless File.exists?(options[:config])
-      raise "Could not find file: #{options[:config]}"
+      if options[:config] == 'Shrinkfile'
+        abort("Error loading Shrinkfile: " +
+              "Please specify location using -c <path/to/Shrinkfile>")
+      else
+        abort("Error loading Shrinkfile: " +
+              "Could not find file at: #{options[:config]}")
+      end
     end
 
-    unless valid_pg_url?(options[:url])
-      raise "Invalid postgres url: #{options[:url]}"
-    end
+    validate_pg_url!(options[:url])
 
     database = Database::Postgres.new(:postgres_url => options[:url])
 
@@ -49,8 +65,7 @@ module PgShrink
       cont = gets
       cont = cont.strip
       unless cont == 'y' || cont == 'Y'
-        puts 'Aborting!'
-        exit 1
+        abort('Aborting!')
       end
     end
 
