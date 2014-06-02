@@ -2,6 +2,7 @@ module PgShrink
   class SubTableFilter < SubTableOperator
 
     def propagate!(old_parent_data, new_parent_data)
+      return if (old_parent_data.empty? && new_parent_data.empty?)
       old_batch_keys = old_parent_data.map {|record| record[@opts[:primary_key]]}
       new_batch_keys = new_parent_data.map {|record| record[@opts[:primary_key]]}
 

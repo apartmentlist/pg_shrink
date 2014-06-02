@@ -88,7 +88,7 @@ describe PgShrink::Table do
 
   context "when a subtable filter is specified" do
     let(:database) {PgShrink::Database.new}
-    let(:table) { PgShrink::Table.new(database, :test_table) }
+    let(:table) { PgShrink::Table.new(database, :test_table, :primary_key => false) }
 
     before(:each) do
       table.filter_subtable(:subtable)
