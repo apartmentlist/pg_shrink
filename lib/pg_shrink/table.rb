@@ -31,12 +31,23 @@ module PgShrink
     end
 
     def lock(opts = {}, &block)
-      @lock = block
+      @lock_opts = opts
+      @lock_block = block if block_given?
+    end
+
+    def has_lock?
+      (@lock_opts && @lock_opts.any?) || @lock_block
+    end
+
+    def lock_condition_ok?
+      !@lock_block
     end
 
     def locked?(record)
-      if @lock
-        @lock.call(record)
+      if @lock_block
+        @lock_block.call(record)
+      elsif @lock_opts && @lock_opts.any?
+        raise "unimplemented"
       end
     end
 
@@ -101,6 +112,10 @@ module PgShrink
       end
     end
 
+    def condition_filter(filter)
+      self.database.delete_records(self.table_name, filter.opts, @lock_opts)
+    end
+
     def filter_batch(batch, &filter_block)
       new_set = batch.select do |record|
         locked?(record) || filter_block.call(record.dup)
@@ -126,9 +141,13 @@ module PgShrink
         remove!
       else
         self.filters.each do |filter|
-          self.records_in_batches do |batch|
-            self.filter_batch(batch) do |record|
-              filter.apply(record)
+          if filter.conditions? && self.lock_condition_ok?
+            self.condition_filter(filter)
+          else
+            self.records_in_batches do |batch|
+              self.filter_batch(batch) do |record|
+                filter.apply(record)
+              end
             end
           end
         end
@@ -146,7 +165,7 @@ module PgShrink
     end
 
     def can_just_remove?
-      self.subtable_filters.empty? && self.subtable_sanitizers.empty? && !@lock
+      self.subtable_filters.empty? && self.subtable_sanitizers.empty? && !has_lock?
     end
 
     # Mark @remove and add filter so that if we're in the simple case we can

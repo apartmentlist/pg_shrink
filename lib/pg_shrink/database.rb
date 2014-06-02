@@ -42,7 +42,7 @@ module PgShrink
     end
 
     # The delete_records method takes a table name and a condition to delete on.
-    def delete_records(table_name, condition)
+    def delete_records(table_name, conditions, exclude_conditions = nil)
       raise "implement in subclass"
     end
 

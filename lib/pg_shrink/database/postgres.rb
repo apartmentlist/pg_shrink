@@ -87,8 +87,16 @@ module PgShrink
       self.connection.from(table_name).where(opts).all
     end
 
-    def delete_records(table_name, condition_to_delete)
-      self.connection.from(table_name).where(condition_to_delete).delete
+    def delete_records(table_name, conditions, exclude_conditions = [])
+      query = self.connection.from(table_name)
+      exclude_conditions = [exclude_conditions].flatten
+      [conditions].flatten.compact.each do |cond|
+        query = query.where(cond)
+      end
+      [exclude_conditions].flatten.compact.each do |exclude_cond|
+        query = query.exclude(exclude_cond)
+      end
+      query.delete
     end
   end
 end
