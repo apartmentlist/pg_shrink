@@ -53,7 +53,11 @@ module PgShrink
         batch = self.connection[sql].all.compact
 
         yield(batch)
-        i = batch.last[primary_key]
+        if batch.any?
+          i = batch.last[primary_key]
+        else
+          break
+        end
       end
     end
 

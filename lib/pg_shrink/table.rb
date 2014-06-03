@@ -116,7 +116,7 @@ module PgShrink
     end
 
     def condition_filter(filter)
-      self.database.delete_records(self.table_name, {}, filter.opts.merge(@lock_opts || {}))
+      self.database.delete_records(self.table_name, {}, [filter.opts, @lock_opts].compact)
     end
 
     def filter_batch(batch, &filter_block)

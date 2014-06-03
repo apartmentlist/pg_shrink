@@ -53,6 +53,30 @@ describe PgShrink do
             end
           end
         end
+        describe "with a conditions string" do
+          before(:each) do
+            database.filter_table(:users) do |f|
+              f.filter_by("name like '%test 1%'")
+            end
+          end
+
+          it "Should not call records in batches" do
+            expect(database).not_to receive(:records_in_batches)
+            database.shrink!
+          end
+
+          it "Should call delete_records once" do
+            expect(database).to receive(:delete_records).once
+            database.shrink!
+          end
+
+          it "Should result in the appropriate records being deleted" do
+            database.shrink!
+            remaining_users = database.connection.from(:users).all
+            # 1 and 10-19
+            expect(remaining_users.size).to eq(11)
+          end
+        end
 
         describe "when filtering just with a conditions hash" do
           before(:each) do
