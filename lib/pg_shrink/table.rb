@@ -32,7 +32,10 @@ module PgShrink
 
     def lock(opts = {}, &block)
       @lock_opts = opts
-      @lock_block = block if block_given?
+      if block_given?
+        puts "WARNING:  Block-based lock on #{self.table_name} will make things SLOW"
+        @lock_block = block
+      end
     end
 
     def has_lock?
