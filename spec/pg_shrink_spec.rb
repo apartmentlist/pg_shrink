@@ -74,12 +74,32 @@ describe PgShrink do
             database.shrink!
           end
 
-          it "Should call result in the appropriate records being deleted" do
+          it "Should result in the appropriate records being deleted" do
             database.shrink!
             remaining_users = database.connection.from(:users).all
             expect(remaining_users.size).to eq(10)
           end
-       
+
+          describe "and a block-based lock" do
+            before(:each) do
+              database.filter_table(:users) do |f|
+                f.lock do |u|
+                  u[:name] == "test 11"
+                end
+              end
+            end
+            it "falls back to results in batches" do
+              expect(database).to receive(:records_in_batches)
+              database.shrink!
+            end
+            it "Still results in the appropriate records being deleted" do
+              database.shrink!
+              remaining_users = database.connection.from(:users).all
+              expect(remaining_users.size).to eq(11)
+            end
+
+          end
+
           describe "with a subtable_filter" do
             before(:each) do
               database.filter_table(:users) do |f|
