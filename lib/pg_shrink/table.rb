@@ -129,11 +129,7 @@ module PgShrink
 
     def sanitize_batch(batch, &sanitize_block)
       new_set = batch.map do |record|
-        if locked?(record)
-          record.dup
-        else
-          sanitize_block.call(record.dup)
-        end
+        sanitize_block.call(record.dup)
       end
       update_records(batch, new_set)
       sanitize_subtables(batch, new_set)
