@@ -46,13 +46,14 @@ module PgShrink
       end
       max_id = self.connection["select max(#{primary_key}) from #{table_name}"].
                     first[:max]
-      i = 1;
+      i = 0;
       while i < max_id  do
         sql = "select * from #{table_name} where " +
-                 "#{primary_key} >= #{i} and #{primary_key} < #{i + batch_size}"
-        batch = self.connection[sql].all
+                 "#{primary_key} > #{i} limit #{batch_size}"
+        batch = self.connection[sql].all.compact
+
         yield(batch)
-        i = i + batch_size
+        i = batch.last[primary_key]
       end
     end
 
