@@ -57,7 +57,10 @@ describe PgShrink do
         describe "when filtering just with a conditions hash" do
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by(:name => ["test 1", "test 2", "test 3", "test 4", "test 5"])
+              f.filter_by({
+                :name => ["test 1", "test 2", "test 3", "test 4", "test 5",
+                          "test 6", "test 7", "test 8", "test 9", "test 10"]
+              })
             end
           end
 
@@ -74,7 +77,21 @@ describe PgShrink do
           it "Should call result in the appropriate records being deleted" do
             database.shrink!
             remaining_users = database.connection.from(:users).all
-            expect(remaining_users.size).to eq(15)
+            expect(remaining_users.size).to eq(10)
+          end
+       
+          describe "with a subtable_filter" do
+            before(:each) do
+              database.filter_table(:users) do |f|
+                f.filter_subtable(:user_preferences, :foreign_key => :user_id)
+              end
+            end
+
+            it "should remove the appropriate subtable records" do
+              database.shrink!
+              remaining_prefs = database.connection.from(:user_preferences).all
+              expect(remaining_prefs.size).to eq(30)
+            end
           end
         end
 

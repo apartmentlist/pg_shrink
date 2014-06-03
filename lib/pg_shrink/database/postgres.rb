@@ -98,5 +98,35 @@ module PgShrink
       end
       query.delete
     end
+
+    def propagate_delete(opts)
+      # what we conceptually want to do is delete the left outer join where id is null.
+      # That's not working in postgres, so we instead use where not exists.  Docs
+      # indicate using where not exists and select 1 in this case.
+      # See:
+      # http://www.postgresql.org/docs/current/interactive/functions-subquery.html#FUNCTIONS-SUBQUERY-EXISTS
+      query = "DELETE FROM #{opts[:child_table]} WHERE NOT EXISTS (" +
+                "SELECT 1 from #{opts[:parent_table]} where " +
+                "#{opts[:child_table]}.#{opts[:child_key]} = " +
+                "#{opts[:parent_table]}.#{opts[:parent_key]}" +
+              ")"
+
+
+      # Outside of the join statements, we want to maintain the ease of hash-based
+      # conditions.  Do this by using a query builder but then swapping in delete SQL
+      # in the end.
+      query_builder = connection.from(opts[:child_table])
+      [opts[:conditions]].flatten.compact.each do |cond|
+        query_builder = query_builder.where(cond)
+      end
+      [opts[:exclude]].flatten.compact.each do |exclude_cond|
+        query_builder = query_builder.exclude(exclude_cond)
+      end
+      sql = query_builder.sql.gsub("WHERE", "AND").
+                              gsub("SELECT * FROM \"#{opts[:child_table]}\"",
+                                   query)
+
+      connection[sql].delete
+    end
   end
 end

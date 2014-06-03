@@ -3,7 +3,7 @@ module PgShrink
     attr_accessor :table_name
     attr_accessor :database
     attr_accessor :opts
-    attr_reader :filters, :sanitizers, :subtable_filters, :subtable_sanitizers
+    attr_reader :filters, :sanitizers, :subtable_filters, :subtable_sanitizers, :lock_opts
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
     def initialize(database, table_name, opts = {})
@@ -143,6 +143,7 @@ module PgShrink
         self.filters.each do |filter|
           if filter.conditions? && self.lock_condition_ok?
             self.condition_filter(filter)
+            self.subtable_filters.each(&:propagate_table!)
           else
             self.records_in_batches do |batch|
               self.filter_batch(batch) do |record|

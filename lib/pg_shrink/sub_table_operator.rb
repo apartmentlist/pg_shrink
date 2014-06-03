@@ -38,7 +38,6 @@ module PgShrink
       raise "Implement in subclass"
     end
 
-
   end
 end
 

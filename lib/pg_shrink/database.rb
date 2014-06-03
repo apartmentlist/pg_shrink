@@ -46,6 +46,12 @@ module PgShrink
       raise "implement in subclass"
     end
 
+    # This is kind of a leaky abstraction b/c I'm not sure how this would work
+    # outside of sql
+    def propagate_delete(opts)
+      raise "implement in subclass"
+    end
+
     def filter!
       tables.values.each(&:filter!)
     end
