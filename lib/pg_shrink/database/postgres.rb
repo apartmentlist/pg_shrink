@@ -135,8 +135,11 @@ module PgShrink
     end
 
     def vacuum_and_reindex(table_name)
+      self.log("Beginning vacuum on #{table_name}")
       connection["vacuum full #{table_name}"].first
+      self.log("Beginning reindex on #{table_name}")
       connection["reindex table #{table_name}"].first
+      self.log("done reindexing #{table_name}")
     end
   end
 end

@@ -19,7 +19,8 @@ module PgShrink
       url: nil,
       config: 'Shrinkfile',
       force: false,
-      batch_size: 10000
+      batch_size: 10000,
+      log: false,
     }
   end
 
@@ -60,7 +61,8 @@ module PgShrink
     end
 
     database = Database::Postgres.new(:postgres_url => options[:url],
-                                      :batch_size => batch_size)
+                                      :batch_size => batch_size,
+                                      :log => options[:log])
 
     database.instance_eval(File.read(options[:config]), options[:config], 1)
 

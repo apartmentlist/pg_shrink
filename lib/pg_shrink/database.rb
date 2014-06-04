@@ -68,5 +68,15 @@ module PgShrink
       filter!
       sanitize!
     end
+
+    def initialize(opts = {})
+      @opts = opts
+    end
+
+    def log(message)
+      if @opts[:log]
+        puts "#{Time.now}: #{message}"
+      end
+    end
   end
 end
