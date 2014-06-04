@@ -10,7 +10,7 @@ module PgShrink
 
     def conditions?
       # use !empty instead of any? because we accept string conditions
-      @opts && !@opts.empty? && !@block
+      !@block
     end
 
     def apply(hash)
