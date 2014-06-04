@@ -116,7 +116,12 @@ module PgShrink
     end
 
     def condition_filter(filter)
-      self.database.delete_records(self.table_name, {}, [filter.opts, @lock_opts].compact)
+      self.database.delete_records(self.table_name, {}, [filter.opts, lock_opts].compact)
+      # If there aren't any subtables, there isn't much benefit to vacuuming in
+      # the middle, and we'll wait until we're done with all filters
+      if self.subtable_filters.any?
+        self.database.vacuum_and_reindex(self.table_name)
+      end
     end
 
     def filter_batch(batch, &filter_block)

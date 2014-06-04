@@ -93,7 +93,7 @@ module PgShrink
     end
 
     def delete_records(table_name, conditions, exclude_conditions = [])
-      query = self.connection.from(table_name)
+      query = connection.from(table_name)
       exclude_conditions = [exclude_conditions].flatten
       [conditions].flatten.compact.each do |cond|
         query = query.where(cond)
@@ -132,6 +132,11 @@ module PgShrink
                                    query)
 
       connection[sql].delete
+    end
+
+    def vacuum_and_reindex(table_name)
+      connection["vacuum full #{table_name}"].first
+      connection["reindex table #{table_name}"].first
     end
   end
 end

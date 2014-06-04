@@ -46,6 +46,10 @@ module PgShrink
       raise "implement in subclass"
     end
 
+    # vacuum and reindex is pg specific... do nothing in other cases
+    def vacuum_and_reindex(table_name)
+    end
+
     # This is kind of a leaky abstraction b/c I'm not sure how this would work
     # outside of sql
     def propagate_delete(opts)
