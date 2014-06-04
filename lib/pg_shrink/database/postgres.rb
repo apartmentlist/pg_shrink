@@ -27,6 +27,15 @@ module PgShrink
      end
     end
 
+    def database_name
+      if @opts[:postgres_url]
+        @opts[:postgres_url] =~ /.*\/([^\/]+)$/
+        return $1
+      else
+        @opts[:database]
+      end
+    end
+
     def batch_size
       @opts[:batch_size]
     end
@@ -140,6 +149,20 @@ module PgShrink
       self.log("Beginning reindex on #{table_name}")
       connection["reindex table #{table_name}"].first
       self.log("done reindexing #{table_name}")
+    end
+    
+    def vacuum_and_reindex_all!
+      self.log("Beginning full database vacuum")
+      connection["vacuum full"]
+      self.log("beginning full database reindex")
+      connection["reindex database #{database_name}"]
+      self.log("done reindexing full database")
+    end
+
+    def shrink!
+      filter!
+      vacuum_and_reindex_all!
+      sanitize!
     end
   end
 end
