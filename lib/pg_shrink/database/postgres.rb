@@ -153,9 +153,9 @@ module PgShrink
     
     def vacuum_and_reindex_all!
       self.log("Beginning full database vacuum")
-      connection["vacuum full"]
+      connection["vacuum full"].first
       self.log("beginning full database reindex")
-      connection["reindex database #{database_name}"]
+      connection["reindex database #{database_name}"].first
       self.log("done reindexing full database")
     end
 
