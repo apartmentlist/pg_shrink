@@ -47,7 +47,7 @@ module PgShrink
     end
 
     # vacuum and reindex is pg specific... do nothing in other cases
-    def vacuum_and_reindex(table_name)
+    def vacuum_and_reindex!(table_name)
     end
 
     # This is kind of a leaky abstraction b/c I'm not sure how this would work

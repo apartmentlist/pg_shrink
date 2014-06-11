@@ -20,7 +20,7 @@ module PgShrink
       self.database.log("Done with subtable propagation from " +
                "#{self.parent.table_name} to #{self.table.table_name}")
       if self.table.subtable_filters.any?
-        self.database.vacuum_and_reindex(self.table.table_name)
+        self.database.vacuum_and_reindex!(self.table.table_name)
         self.table.subtable_filters.each(&:propagate_table!)
       end
     end

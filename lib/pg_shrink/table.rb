@@ -122,7 +122,7 @@ module PgShrink
       self.database.log("Done filtering on #{table_name}")
       # the middle, and we'll wait until we're done with all filters
       if self.subtable_filters.any?
-        self.database.vacuum_and_reindex(self.table_name)
+        self.database.vacuum_and_reindex!(self.table_name)
       end
     end
 

@@ -142,7 +142,7 @@ module PgShrink
       connection[sql].delete
     end
 
-    def vacuum_and_reindex(table_name)
+    def vacuum_and_reindex!(table_name)
       self.log("Beginning vacuum on #{table_name}")
       connection["vacuum full #{table_name}"].first
       self.log("Beginning reindex on #{table_name}")
