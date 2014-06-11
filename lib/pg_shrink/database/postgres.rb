@@ -103,11 +103,10 @@ module PgShrink
 
     def delete_records(table_name, conditions, exclude_conditions = [])
       query = connection.from(table_name)
-      exclude_conditions = [exclude_conditions].flatten
-      [conditions].flatten.compact.each do |cond|
+      Array.wrap(conditions).compact.each do |cond|
         query = query.where(cond)
       end
-      [exclude_conditions].flatten.compact.each do |exclude_cond|
+      Array.wrap(exclude_conditions).compact.each do |exclude_cond|
         query = query.exclude(exclude_cond)
       end
       query.delete
@@ -130,10 +129,10 @@ module PgShrink
       # conditions.  Do this by using a query builder but then swapping in delete SQL
       # in the end.
       query_builder = connection.from(opts[:child_table])
-      [opts[:conditions]].flatten.compact.each do |cond|
+      Array.wrap(opts[:conditions]).compact.each do |cond|
         query_builder = query_builder.where(cond)
       end
-      [opts[:exclude]].flatten.compact.each do |exclude_cond|
+      Array.wrap(opts[:exclude]).compact.each do |exclude_cond|
         query_builder = query_builder.exclude(exclude_cond)
       end
       sql = query_builder.sql.gsub("WHERE", "AND").
