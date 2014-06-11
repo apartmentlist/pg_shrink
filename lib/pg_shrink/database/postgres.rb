@@ -27,6 +27,15 @@ module PgShrink
      end
     end
 
+    def database_name
+      if @opts[:postgres_url]
+        @opts[:postgres_url] =~ /.*\/([^\/]+)$/
+        return $1
+      else
+        @opts[:database]
+      end
+    end
+
     def batch_size
       @opts[:batch_size]
     end
@@ -46,13 +55,18 @@ module PgShrink
       end
       max_id = self.connection["select max(#{primary_key}) from #{table_name}"].
                     first[:max]
-      i = 1;
+      i = 0;
       while i < max_id  do
         sql = "select * from #{table_name} where " +
-                 "#{primary_key} >= #{i} and #{primary_key} < #{i + batch_size}"
-        batch = self.connection[sql].all
+                 "#{primary_key} > #{i} limit #{batch_size}"
+        batch = self.connection[sql].all.compact
+
         yield(batch)
-        i = i + batch_size
+        if batch.any?
+          i = batch.last[primary_key]
+        else
+          break
+        end
       end
     end
 
@@ -87,8 +101,67 @@ module PgShrink
       self.connection.from(table_name).where(opts).all
     end
 
-    def delete_records(table_name, condition_to_delete)
-      self.connection.from(table_name).where(condition_to_delete).delete
+    def delete_records(table_name, conditions, exclude_conditions = [])
+      query = connection.from(table_name)
+      Array.wrap(conditions).compact.each do |cond|
+        query = query.where(cond)
+      end
+      Array.wrap(exclude_conditions).compact.each do |exclude_cond|
+        query = query.exclude(exclude_cond)
+      end
+      query.delete
+    end
+
+    def propagate_delete(opts)
+      # what we conceptually want to do is delete the left outer join where id is null.
+      # That's not working in postgres, so we instead use where not exists.  Docs
+      # indicate using where not exists and select 1 in this case.
+      # See:
+      # http://www.postgresql.org/docs/current/interactive/functions-subquery.html#FUNCTIONS-SUBQUERY-EXISTS
+      query = "DELETE FROM #{opts[:child_table]} WHERE NOT EXISTS (" +
+                "SELECT 1 from #{opts[:parent_table]} where " +
+                "#{opts[:child_table]}.#{opts[:child_key]} = " +
+                "#{opts[:parent_table]}.#{opts[:parent_key]}" +
+              ")"
+
+
+      # Outside of the join statements, we want to maintain the ease of hash-based
+      # conditions.  Do this by using a query builder but then swapping in delete SQL
+      # in the end.
+      query_builder = connection.from(opts[:child_table])
+      Array.wrap(opts[:conditions]).compact.each do |cond|
+        query_builder = query_builder.where(cond)
+      end
+      Array.wrap(opts[:exclude]).compact.each do |exclude_cond|
+        query_builder = query_builder.exclude(exclude_cond)
+      end
+      sql = query_builder.sql.gsub("WHERE", "AND").
+                              gsub("SELECT * FROM \"#{opts[:child_table]}\"",
+                                   query)
+
+      connection[sql].delete
+    end
+
+    def vacuum_and_reindex!(table_name)
+      self.log("Beginning vacuum on #{table_name}")
+      connection["vacuum full #{table_name}"].first
+      self.log("Beginning reindex on #{table_name}")
+      connection["reindex table #{table_name}"].first
+      self.log("done reindexing #{table_name}")
+    end
+    
+    def vacuum_and_reindex_all!
+      self.log("Beginning full database vacuum")
+      connection["vacuum full"].first
+      self.log("beginning full database reindex")
+      connection["reindex database #{database_name}"].first
+      self.log("done reindexing full database")
+    end
+
+    def shrink!
+      filter!
+      vacuum_and_reindex_all!
+      sanitize!
     end
   end
 end

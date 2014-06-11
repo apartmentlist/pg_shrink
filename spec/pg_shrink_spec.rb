@@ -53,6 +53,135 @@ describe PgShrink do
             end
           end
         end
+        describe "with a conditions string" do
+          before(:each) do
+            database.filter_table(:users) do |f|
+              f.filter_by("name like '%test 1%'")
+            end
+          end
+
+          it "Should not call records in batches" do
+            expect(database).not_to receive(:records_in_batches)
+            database.shrink!
+          end
+
+          it "Should call delete_records once" do
+            expect(database).to receive(:delete_records).once
+            database.shrink!
+          end
+
+          it "Should result in the appropriate records being deleted" do
+            database.shrink!
+            remaining_users = database.connection.from(:users).all
+            # 1 and 10-19
+            expect(remaining_users.size).to eq(11)
+          end
+        end
+
+        describe "when filtering just with a conditions hash" do
+          before(:each) do
+            database.filter_table(:users) do |f|
+              f.filter_by({
+                :name => ["test 1", "test 2", "test 3", "test 4", "test 5",
+                          "test 6", "test 7", "test 8", "test 9", "test 10"]
+              })
+            end
+          end
+
+          it "Should not call records in batches" do
+            expect(database).not_to receive(:records_in_batches)
+            database.shrink!
+          end
+
+          it "Should call delete_records once" do
+            expect(database).to receive(:delete_records).once
+            database.shrink!
+          end
+
+          it "Should result in the appropriate records being deleted" do
+            database.shrink!
+            remaining_users = database.connection.from(:users).all
+            expect(remaining_users.size).to eq(10)
+          end
+
+          describe "and a condition hash lock" do
+            before(:each) do
+              database.filter_table(:users) do |f|
+                f.lock(name: "test 11")
+              end
+            end
+            it "Should not call records in batches" do
+              expect(database).not_to receive(:records_in_batches)
+              database.shrink!
+            end
+
+            it "Should call delete_records once" do
+              expect(database).to receive(:delete_records).once
+              database.shrink!
+            end
+            it "Still results in the appropriate records being deleted" do
+              database.shrink!
+              remaining_users = database.connection.from(:users).all
+              expect(remaining_users.size).to eq(11)
+            end
+          end
+
+          describe "and a condition string lock" do
+            before(:each) do
+              database.filter_table(:users) do |f|
+                f.lock("name = 'test 11'")
+              end
+            end
+            it "Should not call records in batches" do
+              expect(database).not_to receive(:records_in_batches)
+              database.shrink!
+            end
+
+            it "Should call delete_records once" do
+              expect(database).to receive(:delete_records).once
+              database.shrink!
+            end
+            it "Still results in the appropriate records being deleted" do
+              database.shrink!
+              remaining_users = database.connection.from(:users).all
+              expect(remaining_users.size).to eq(11)
+            end
+          end
+
+          describe "and a block-based lock" do
+            before(:each) do
+              database.filter_table(:users) do |f|
+                f.lock do |u|
+                  u[:name] == "test 11"
+                end
+              end
+            end
+            it "falls back to results in batches" do
+              expect(database).to receive(:records_in_batches)
+              database.shrink!
+            end
+            it "Still results in the appropriate records being deleted" do
+              database.shrink!
+              remaining_users = database.connection.from(:users).all
+              expect(remaining_users.size).to eq(11)
+            end
+
+          end
+
+          describe "with a subtable_filter" do
+            before(:each) do
+              database.filter_table(:users) do |f|
+                f.filter_subtable(:user_preferences, :foreign_key => :user_id)
+              end
+            end
+
+            it "should remove the appropriate subtable records" do
+              database.shrink!
+              remaining_prefs = database.connection.from(:user_preferences).all
+              expect(remaining_prefs.size).to eq(30)
+            end
+          end
+        end
 
         it "Should not run delete if there is nothing filtered" do
           database.filter_table(:users) do |f|
@@ -309,6 +438,90 @@ describe PgShrink do
           database.connection.run(
             "insert into preferences (context_id, context_type, name, value) " +
             "values(#{u[:id]}, 'OtherClass', 'pref#{i}', 'prefvalue#{i}')")
+        end
+      end
+
+      describe "with condition filters" do
+        describe "simple cascade" do
+          before(:each) do
+            database.filter_table(:users) do |f|
+              f.filter_by(:name => "test 1")
+              f.filter_subtable(:preferences, :foreign_key => :context_id,
+                                :type_key => :context_type, :type => 'User')
+            end
+            database.filter!
+          end
+          it "will filter prefs with context_type 'User'" do
+            #
+            remaining_user = database.connection.from(:users).first
+            remaining_preferences = database.connection.from(:preferences).
+              where(:context_type => 'User').all
+            expect(remaining_preferences.size).to eq(3)
+            expect(remaining_preferences.map {|u| u[:context_id]}.uniq).
+              to eq([remaining_user[:id]])
+          end
+
+          it "will not filter preferences without context_type user" do
+            remaining_preferences = database.connection.from(:preferences).
+              where(:context_type => 'OtherClass').all
+            expect(remaining_preferences.size).to eq(20)
+          end
+        end
+        describe "an extra layer of polymorphic subtables" do
+          before(:all) do
+            connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
+                         connection
+            PgSpecHelper.create_table(connection, :preference_dependents,
+                                      {'context_id' => 'integer',
+                                       'context_type' => 'character varying(256)',
+                                       'value' => 'character varying(256)'})
+          end
+
+          before(:each) do
+            PgSpecHelper.clear_table(database.connection, :preference_dependents)
+            prefs = database.connection.from(:preferences).all
+            prefs.each do |pref|
+              database.connection.run(
+                "insert into preference_dependents " +
+                "(context_id, context_type, value) " +
+                "values (#{pref[:id]}, 'Preference', 'depvalue#{pref[:id]}')")
+
+              database.connection.run(
+                "insert into preference_dependents " +
+                "(context_id, context_type, value) " +
+                "values (#{pref[:id]}, 'SomeOtherClass', 'fakevalue#{pref[:id]}')")
+
+            end
+
+            database.filter_table(:users) do |f|
+              f.filter_by(:name => "test 1")
+              f.filter_subtable(:preferences, :foreign_key => :context_id,
+                                :type_key => :context_type, :type => 'User')
+            end
+
+            database.filter_table(:preferences) do |f|
+              f.filter_subtable(:preference_dependents,
+                                :foreign_key => :context_id,
+                                :type_key => :context_type,
+                                :type => 'Preference')
+            end
+            database.filter!
+          end
+          it "will filter preference dependents associated with preferences" do
+            remaining_preferences = database.connection.from(:preferences).all
+            remaining_dependents = database.connection.
+              from(:preference_dependents).
+              where(:context_type => 'Preference').all
+
+            expect(remaining_dependents.size).to eq(remaining_preferences.size)
+          end
+
+          it "will not filter preference dependents with different type" do
+            other_dependents = database.connection.
+              from(:preference_dependents).
+              where(:context_type => 'SomeOtherClass').all
+            expect(other_dependents.size).to eq(80)
+          end
         end
       end
 

@@ -1,12 +1,16 @@
 filter_table :users do |f|
 
-  # filter_by takes a block and yields the fields of each record (as a hash)
-  # the block should return true to keep the record, false if not.  For
-  # ease of use and extensibility, we allow multiple filter_by blocks
-  # rather than forcing all logic into one block.
-  f.filter_by do |u|
-    u[:id] % 1000 == 0
-  end
+  # filter_by takes a sql condition for the records you would like to keep.
+  # This condition can be as a hash or string
+  f.filter_by("id % 1000 == 0")
+  
+  # NOTE:  It can also take a block that expects the fields of each record (as
+  # a hash) the block should return true to keep the record, false if not.  
+  # However, this approach is substantially slower than the conditions hash
+  # based approach.
+  #f.filter_by do |u|
+  #  u[:id] % 1000 == 0
+  #end
 
   # lock takes a block and yields the fields of each record (as a hash of
   # fieldname => value) If the block returns true this record is immune to all

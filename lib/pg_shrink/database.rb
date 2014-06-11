@@ -41,8 +41,21 @@ module PgShrink
       raise "implement in subclass"
     end
 
-    # The delete_records method takes a table name and a condition to delete on.
-    def delete_records(table_name, condition)
+    # The delete_records method takes a table name  a condition to delete on,
+    # and a condition to prevent deletion on.  This can be used to combine
+    # a targeted deletion with exclusions or to delete an entire table but
+    # for some exclusions by passing no conditions but some exclude conditions.
+    def delete_records(table_name, conditions, exclude_conditions = [])
+      raise "implement in subclass"
+    end
+
+    # vacuum and reindex is pg specific... do nothing in other cases
+    def vacuum_and_reindex!(table_name)
+    end
+
+    # This is kind of a leaky abstraction b/c I'm not sure how this would work
+    # outside of sql
+    def propagate_delete(opts)
       raise "implement in subclass"
     end
 
@@ -57,6 +70,16 @@ module PgShrink
     def shrink!
       filter!
       sanitize!
+    end
+
+    def initialize(opts = {})
+      @opts = opts
+    end
+
+    def log(message)
+      if @opts[:log]
+        puts "#{Time.now}: #{message}"
+      end
     end
   end
 end

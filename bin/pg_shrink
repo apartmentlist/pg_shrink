@@ -37,6 +37,10 @@ Please make sure you have a Shrinkfile or specify one using -c
       options[:force] = true
     end
 
+    verbose_desc = 'run in verbose mode'
+    opts.on('-v', '--verbose', verbose_desc) do
+      options[:log] = true
+    end
 
     opts.on('-h', '--help', 'Show this message and exit') do |h|
       puts opts

@@ -3,7 +3,7 @@ module PgShrink
     attr_accessor :table_name
     attr_accessor :database
     attr_accessor :opts
-    attr_reader :filters, :sanitizers, :subtable_filters, :subtable_sanitizers
+    attr_reader :filters, :sanitizers, :subtable_filters, :subtable_sanitizers, :lock_opts
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
     def initialize(database, table_name, opts = {})
@@ -31,12 +31,27 @@ module PgShrink
     end
 
     def lock(opts = {}, &block)
-      @lock = block
+      @lock_opts = opts
+      if block_given?
+        puts "WARNING:  Block-based lock on #{self.table_name} will make things SLOW"
+        @lock_block = block
+      end
+    end
+
+    def has_lock?
+      (@lock_opts && @lock_opts.any?) || @lock_block
+    end
+
+    def lock_condition_ok?
+      !@lock_block
     end
 
     def locked?(record)
-      if @lock
-        @lock.call(record)
+      if @lock_block
+        @lock_block.call(record)
+      elsif @lock_opts && @lock_opts.any?
+        raise "Unimplemented:  Condition-based locks with block-based " +
+              "filter on table #{self.table_name}"
       end
     end
 
@@ -101,6 +116,17 @@ module PgShrink
       end
     end
 
+    def condition_filter(filter)
+      self.database.log("Beginning filter on #{table_name}")
+      self.database.delete_records(self.table_name, {}, [filter.opts, lock_opts].compact)
+      self.database.log("Done filtering on #{table_name}")
+      # If there aren't any subtables, there isn't much benefit to vacuuming in
+      # the middle, and we'll wait until we're done with all filters
+      if self.subtable_filters.any?
+        self.database.vacuum_and_reindex!(self.table_name)
+      end
+    end
+
     def filter_batch(batch, &filter_block)
       new_set = batch.select do |record|
         locked?(record) || filter_block.call(record.dup)
@@ -111,11 +137,7 @@ module PgShrink
 
     def sanitize_batch(batch, &sanitize_block)
       new_set = batch.map do |record|
-        if locked?(record)
-          record.dup
-        else
-          sanitize_block.call(record.dup)
-        end
+        sanitize_block.call(record.dup)
       end
       update_records(batch, new_set)
       sanitize_subtables(batch, new_set)
@@ -126,9 +148,14 @@ module PgShrink
         remove!
       else
         self.filters.each do |filter|
-          self.records_in_batches do |batch|
-            self.filter_batch(batch) do |record|
-              filter.apply(record)
+          if filter.conditions? && self.lock_condition_ok?
+            self.condition_filter(filter)
+            self.subtable_filters.each(&:propagate_table!)
+          else
+            self.records_in_batches do |batch|
+              self.filter_batch(batch) do |record|
+                filter.apply(record)
+              end
             end
           end
         end
@@ -146,7 +173,7 @@ module PgShrink
     end
 
     def can_just_remove?
-      self.subtable_filters.empty? && self.subtable_sanitizers.empty? && !@lock
+      self.subtable_filters.empty? && self.subtable_sanitizers.empty? && !has_lock?
     end
 
     # Mark @remove and add filter so that if we're in the simple case we can
