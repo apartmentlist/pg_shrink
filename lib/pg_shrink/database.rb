@@ -41,7 +41,10 @@ module PgShrink
       raise "implement in subclass"
     end
 
-    # The delete_records method takes a table name and a condition to delete on.
+    # The delete_records method takes a table name  a condition to delete on,
+    # and a condition to prevent deletion on.  This can be used to combine
+    # a targeted deletion with exclusions or to delete an entire table but
+    # for some exclusions by passing no conditions but some exclude conditions.
     def delete_records(table_name, conditions, exclude_conditions = [])
       raise "implement in subclass"
     end
