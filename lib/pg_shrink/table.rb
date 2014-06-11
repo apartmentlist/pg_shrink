@@ -50,7 +50,8 @@ module PgShrink
       if @lock_block
         @lock_block.call(record)
       elsif @lock_opts && @lock_opts.any?
-        raise "unimplemented"
+        raise "Unimplemented:  Condition-based locks with block-based " +
+              "filter on table #{self.table_name}"
       end
     end
 
