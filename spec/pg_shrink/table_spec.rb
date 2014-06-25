@@ -34,25 +34,6 @@ describe PgShrink::Table do
       end
     end
 
-    context "when locked" do
-      before(:each) do
-        table.lock { |test| !!test[:lock] }
-      end
-
-      it "should not filter locked records" do
-        test_data = [{:u => 1, :lock => false},
-                     {:u => 2, :lock => false},
-                     {:u => 2, :lock => true}]
-        allow(table).to receive(:records_in_batches).and_yield(test_data)
-        allow(table).to receive(:delete_records) do |old_batch, new_batch|
-          expect(old_batch.size).to eq(3)
-          expect(new_batch.size).to eq(2)
-          expect(new_batch).
-            to eq([{:u => 1, :lock => false}, {:u => 2, :lock => true}])
-        end
-        table.filter!
-      end
-    end
   end
 
   context "when a sanitizer is specified" do
@@ -135,18 +116,6 @@ describe PgShrink::Table do
 
     it "should run remove! if there are no dependencies" do
       expect(table).to receive(:remove!)
-      table.shrink!
-    end
-
-    it "should allow locking of records" do
-      table.lock do |u|
-        u[:u] == 1
-      end
-      expect(table).to receive(:records_in_batches).and_yield(test_data)
-      expect(table).to receive(:delete_records) do |old_batch, new_batch|
-        expect(old_batch).to eq(test_data)
-        expect(new_batch).to eq([{:u => 1}])
-      end
       table.shrink!
     end
 

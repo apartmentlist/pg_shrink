@@ -13,13 +13,6 @@ filter_table :users do |f|
   #  u[:id] % 1000 == 0
   #end
 
-  # lock takes a block and yields the fields of each record (as a hash of
-  # fieldname => value) If the block returns true this record is immune to all
-  # further filtering.
-  f.lock do |u|
-    u[:email].split('@').last == 'apartmentlist.com'
-  end
-
   # sanitize takes a block, yields the fields of each record as a hash of
   # fieldname => value and should return a new set of fields that has been
   # sanitized however desired.

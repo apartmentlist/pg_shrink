@@ -3,7 +3,7 @@ module PgShrink
     attr_accessor :table_name
     attr_accessor :database
     attr_accessor :opts
-    attr_reader :filters, :sanitizers, :subtable_filters, :subtable_sanitizers, :lock_opts
+    attr_reader :filters, :sanitizers, :subtable_filters, :subtable_sanitizers
     # TODO:  Figure out, do we need to be able to support tables with no
     # keys?  If so, how should we handle that?
     def initialize(database, table_name, opts = {})
@@ -16,10 +16,6 @@ module PgShrink
       @subtable_sanitizers = []
     end
 
-    def update_options(opts)
-      @opts = @opts.merge(opts)
-    end
-
     def filter_by(opts = {}, &block)
       self.filters << TableFilter.new(self, opts, &block)
     end
@@ -30,29 +26,11 @@ module PgShrink
       yield filter.table if block_given?
     end
 
-    def lock(opts = {}, &block)
-      @lock_opts = opts
-      if block_given?
-        puts "WARNING:  Block-based lock on #{self.table_name} will make things SLOW"
-        @lock_block = block
-      end
-    end
+    #
+    # internal methods not intended to be used from Shrinkfile below this point
 
-    def has_lock?
-      (@lock_opts && @lock_opts.any?) || @lock_block
-    end
-
-    def lock_condition_ok?
-      !@lock_block
-    end
-
-    def locked?(record)
-      if @lock_block
-        @lock_block.call(record)
-      elsif @lock_opts && @lock_opts.any?
-        raise "Unimplemented:  Condition-based locks with block-based " +
-              "filter on table #{self.table_name}"
-      end
+    def update_options(opts)
+      @opts = @opts.merge(opts)
     end
 
     def sanitize(opts = {}, &block)
@@ -118,7 +96,7 @@ module PgShrink
 
     def condition_filter(filter)
       self.database.log("Beginning filter on #{table_name}")
-      self.database.delete_records(self.table_name, {}, [filter.opts, lock_opts].compact)
+      self.database.delete_records(self.table_name, {}, filter.opts)
       self.database.log("Done filtering on #{table_name}")
       # If there aren't any subtables, there isn't much benefit to vacuuming in
       # the middle, and we'll wait until we're done with all filters
@@ -129,7 +107,7 @@ module PgShrink
 
     def filter_batch(batch, &filter_block)
       new_set = batch.select do |record|
-        locked?(record) || filter_block.call(record.dup)
+        filter_block.call(record.dup)
       end
       delete_records(batch, new_set)
       filter_subtables(batch, new_set)
@@ -148,7 +126,7 @@ module PgShrink
         remove!
       else
         self.filters.each do |filter|
-          if filter.conditions? && self.lock_condition_ok?
+          if filter.conditions?
             self.condition_filter(filter)
             self.subtable_filters.each(&:propagate_table!)
           else
@@ -173,7 +151,7 @@ module PgShrink
     end
 
     def can_just_remove?
-      self.subtable_filters.empty? && self.subtable_sanitizers.empty? && !has_lock?
+      self.subtable_filters.empty? && self.subtable_sanitizers.empty?
     end
 
     # Mark @remove and add filter so that if we're in the simple case we can

@@ -14,8 +14,7 @@ module PgShrink
                                      :child_table => self.table.table_name,
                                      :parent_key => primary_key,
                                      :child_key => foreign_key,
-                                     :conditions => additional_conditions,
-                                     :exclude => self.table.lock_opts)
+                                     :conditions => additional_conditions)
 
       self.database.log("Done with subtable propagation from " +
                "#{self.parent.table_name} to #{self.table.table_name}")
