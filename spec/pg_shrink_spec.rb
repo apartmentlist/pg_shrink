@@ -269,7 +269,7 @@ describe PgShrink do
             expect(remaining_preferences.size).to eq(3)
             expect(remaining_preferences.all? do |p|
               p[:value] =~ /sanitized/
-            end).to be_true
+            end).to be true
           end
         end
       end
