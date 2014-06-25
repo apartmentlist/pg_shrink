@@ -30,7 +30,7 @@ module PgShrink
             "Please specify postgres url using -u <postgres_url>")
     end
     uri = URI.parse(url)
-    if uri.scheme == 'postgres' && !uri.user.blank? && uri.path != '/'
+    if uri.scheme == 'postgres' && uri.path != '/'
       return true
     else
       abort("Error loading postgres: " +
