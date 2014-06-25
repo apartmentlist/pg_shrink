@@ -119,14 +119,6 @@ describe PgShrink do
           end
         end
 
-        it "Should not run delete if there is nothing filtered" do
-          database.filter_table(:users) do |f|
-            f.filter_by {true}
-          end
-          expect(database).not_to receive(:delete_records)
-          database.shrink!
-        end
-
         describe "with a test shrinkfile" do
           let(:shrinkfile) {"spec/Shrinkfile.basic"}
           let(:url) {database.connection_string}
@@ -143,9 +135,7 @@ describe PgShrink do
         describe "a simple filter and subtable" do
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by do |u|
-                u[:name] == "test 1"
-              end
+              f.filter_by "name = 'test 1'"
               f.filter_subtable(:user_preferences, :foreign_key => :user_id)
             end
             database.filter!
@@ -170,9 +160,7 @@ describe PgShrink do
 
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by do |u|
-                u[:name] == "test 1"
-              end
+              f.filter_by "name = 'test 1'"
               f.sanitize do |u|
                 u[:name] = "sanitized #{u[:name]}"
                 u[:email] = "blank_email#{u[:id]}@foo.bar"
@@ -303,9 +291,7 @@ describe PgShrink do
         describe "a simple filter and chained subtables" do
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by do |u|
-                u[:name] == "test 1"
-              end
+              f.filter_by "name = 'test 1'"
               f.filter_subtable(:user_preferences, :foreign_key => :user_id)
             end
             database.filter_table(:user_preferences) do |f|
@@ -464,9 +450,7 @@ describe PgShrink do
       describe "simple two table filtering" do
         before(:each) do
           database.filter_table(:users) do |f|
-            f.filter_by do |u|
-              u[:name] == "test 1"
-            end
+            f.filter_by "name = 'test 1'"
             f.filter_subtable(:preferences, :foreign_key => :context_id,
                               :type_key => :context_type, :type => 'User')
           end
@@ -516,9 +500,7 @@ describe PgShrink do
           end
 
           database.filter_table(:users) do |f|
-            f.filter_by do |u|
-              u[:name] == "test 1"
-            end
+            f.filter_by "name = 'test 1'"
             f.filter_subtable(:preferences, :foreign_key => :context_id,
                               :type_key => :context_type, :type => 'User')
           end
@@ -593,9 +575,7 @@ describe PgShrink do
       describe "With a simple cascading filter" do
         before(:each) do
           database.filter_table(:users) do |f|
-            f.filter_by do |u|
-              u[:name] == "test 1"
-            end
+            f.filter_by "name = 'test 1'"
             f.filter_subtable(:apartments_users,
                               :foreign_key => :user_id) do |t|
               t.filter_subtable(:apartments, :foreign_key => :id,

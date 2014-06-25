@@ -16,21 +16,14 @@ module PgShrink
       @subtable_sanitizers = []
     end
 
-    def filter_by(opts = {}, &block)
-      self.filters << TableFilter.new(self, opts, &block)
+    def filter_by(opts)
+      self.filters << TableFilter.new(self, opts)
     end
 
     def filter_subtable(table_name, opts = {})
       filter = SubTableFilter.new(self, table_name, opts)
       self.subtable_filters << filter
       yield filter.table if block_given?
-    end
-
-    #
-    # internal methods not intended to be used from Shrinkfile below this point
-
-    def update_options(opts)
-      @opts = @opts.merge(opts)
     end
 
     def sanitize(opts = {}, &block)
@@ -41,6 +34,14 @@ module PgShrink
       sanitizer = SubTableSanitizer.new(self, table_name, opts)
       self.subtable_sanitizers << sanitizer
       yield sanitizer.table if block_given?
+    end
+
+
+    #
+    # internal methods not intended to be used from Shrinkfile below this point
+
+    def update_options(opts)
+      @opts = @opts.merge(opts)
     end
 
     def update_records(original_records, new_records)
@@ -105,14 +106,6 @@ module PgShrink
       end
     end
 
-    def filter_batch(batch, &filter_block)
-      new_set = batch.select do |record|
-        filter_block.call(record.dup)
-      end
-      delete_records(batch, new_set)
-      filter_subtables(batch, new_set)
-    end
-
     def sanitize_batch(batch, &sanitize_block)
       new_set = batch.map do |record|
         sanitize_block.call(record.dup)
@@ -126,16 +119,8 @@ module PgShrink
         remove!
       else
         self.filters.each do |filter|
-          if filter.conditions?
-            self.condition_filter(filter)
-            self.subtable_filters.each(&:propagate_table!)
-          else
-            self.records_in_batches do |batch|
-              self.filter_batch(batch) do |record|
-                filter.apply(record)
-              end
-            end
-          end
+          self.condition_filter(filter)
+          self.subtable_filters.each(&:propagate_table!)
         end
       end
     end
@@ -159,7 +144,7 @@ module PgShrink
     # dependencies will be handled
     def mark_for_removal!
       @remove = true
-      self.filter_by { false }
+      self.filter_by 'false'
     end
 
     def remove?

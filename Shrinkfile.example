@@ -4,14 +4,6 @@ filter_table :users do |f|
   # filter_by takes a sql condition for the records you would like to keep.
   # This condition can be as a hash or string
   f.filter_by("id % 1000 == 0")
-  
-  # NOTE:  It can also take a block that expects the fields of each record (as
-  # a hash) the block should return true to keep the record, false if not.  
-  # However, this approach is substantially slower than the conditions hash
-  # based approach.
-  #f.filter_by do |u|
-  #  u[:id] % 1000 == 0
-  #end
 
   # sanitize takes a block, yields the fields of each record as a hash of
   # fieldname => value and should return a new set of fields that has been
@@ -38,7 +30,7 @@ filter_table :users do |f|
                                              :type => 'User')
 
   # If it feels more natural, you can define additional filters
-  # or locks within a filter_subtable definitition
+  # within a filter_subtable definitition
   f.filter_subtable(:lockable_table, :foreign_key => :user_id) do |sub|
     sub.lock do |u|
       u[:locked] == true
