@@ -1,3 +1,4 @@
+
 filter_table :users do |f|
 
   # filter_by takes a sql condition for the records you would like to keep.
