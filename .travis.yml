@@ -1,0 +1,11 @@
+#
+language: ruby
+rvm: 2.1.2
+cache:
+- bundler
+- apt
+before_script:
+- cp spec/pg_config.travis.yml spec/pg_config.yml
+- createdb test_pg_shrink
+addons:
+  postgresql: '9.3'
