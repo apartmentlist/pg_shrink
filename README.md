@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/apartmentlist/pg-shrink.svg?branch=master)](https://travis-ci.org/apartmentlist/pg-shrink)
+
 # PgShrink
 
 The pg_shrink tool makes it easy to shrink and sanitize a postgres database,
