@@ -12,6 +12,7 @@ require "pg_shrink/sub_table_operator"
 require "pg_shrink/sub_table_filter"
 require "pg_shrink/sub_table_sanitizer"
 require "pg_shrink/table"
+
 module PgShrink
 
   def self.blank_options
@@ -20,7 +21,7 @@ module PgShrink
       config: 'Shrinkfile',
       force: false,
       batch_size: 10000,
-      log: false,
+      log: true,
     }
   end
 
@@ -60,9 +61,9 @@ module PgShrink
       abort("Batch size must be at least 1.  #{options[:batch_size]} is invalid!")
     end
 
-    database = Database::Postgres.new(:postgres_url => options[:url],
-                                      :batch_size => batch_size,
-                                      :log => options[:log])
+    database = PgShrink::Database::Postgres.new(postgres_url: options[:url],
+                                                batch_size: batch_size,
+                                                log: options[:log])
 
     database.instance_eval(File.read(options[:config]), options[:config], 1)
 

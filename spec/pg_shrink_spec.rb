@@ -104,70 +104,6 @@ describe PgShrink do
             expect(remaining_users.size).to eq(10)
           end
 
-          describe "and a condition hash lock" do
-            before(:each) do
-              database.filter_table(:users) do |f|
-                f.lock(name: "test 11")
-              end
-            end
-            it "Should not call records in batches" do
-              expect(database).not_to receive(:records_in_batches)
-              database.shrink!
-            end
-
-            it "Should call delete_records once" do
-              expect(database).to receive(:delete_records).once
-              database.shrink!
-            end
-            it "Still results in the appropriate records being deleted" do
-              database.shrink!
-              remaining_users = database.connection.from(:users).all
-              expect(remaining_users.size).to eq(11)
-            end
-          end
-
-          describe "and a condition string lock" do
-            before(:each) do
-              database.filter_table(:users) do |f|
-                f.lock("name = 'test 11'")
-              end
-            end
-            it "Should not call records in batches" do
-              expect(database).not_to receive(:records_in_batches)
-              database.shrink!
-            end
-
-            it "Should call delete_records once" do
-              expect(database).to receive(:delete_records).once
-              database.shrink!
-            end
-            it "Still results in the appropriate records being deleted" do
-              database.shrink!
-              remaining_users = database.connection.from(:users).all
-              expect(remaining_users.size).to eq(11)
-            end
-          end
-
-          describe "and a block-based lock" do
-            before(:each) do
-              database.filter_table(:users) do |f|
-                f.lock do |u|
-                  u[:name] == "test 11"
-                end
-              end
-            end
-            it "falls back to results in batches" do
-              expect(database).to receive(:records_in_batches)
-              database.shrink!
-            end
-            it "Still results in the appropriate records being deleted" do
-              database.shrink!
-              remaining_users = database.connection.from(:users).all
-              expect(remaining_users.size).to eq(11)
-            end
-
-          end
-
           describe "with a subtable_filter" do
             before(:each) do
               database.filter_table(:users) do |f|
@@ -181,14 +117,6 @@ describe PgShrink do
               expect(remaining_prefs.size).to eq(30)
             end
           end
-        end
-
-        it "Should not run delete if there is nothing filtered" do
-          database.filter_table(:users) do |f|
-            f.filter_by {true}
-          end
-          expect(database).not_to receive(:delete_records)
-          database.shrink!
         end
 
         describe "with a test shrinkfile" do
@@ -207,9 +135,7 @@ describe PgShrink do
         describe "a simple filter and subtable" do
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by do |u|
-                u[:name] == "test 1"
-              end
+              f.filter_by "name = 'test 1'"
               f.filter_subtable(:user_preferences, :foreign_key => :user_id)
             end
             database.filter!
@@ -234,9 +160,7 @@ describe PgShrink do
 
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by do |u|
-                u[:name] == "test 1"
-              end
+              f.filter_by "name = 'test 1'"
               f.sanitize do |u|
                 u[:name] = "sanitized #{u[:name]}"
                 u[:email] = "blank_email#{u[:id]}@foo.bar"
@@ -269,7 +193,7 @@ describe PgShrink do
             expect(remaining_preferences.size).to eq(3)
             expect(remaining_preferences.all? do |p|
               p[:value] =~ /sanitized/
-            end).to be_true
+            end).to be true
           end
         end
       end
@@ -367,9 +291,7 @@ describe PgShrink do
         describe "a simple filter and chained subtables" do
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by do |u|
-                u[:name] == "test 1"
-              end
+              f.filter_by "name = 'test 1'"
               f.filter_subtable(:user_preferences, :foreign_key => :user_id)
             end
             database.filter_table(:user_preferences) do |f|
@@ -528,9 +450,7 @@ describe PgShrink do
       describe "simple two table filtering" do
         before(:each) do
           database.filter_table(:users) do |f|
-            f.filter_by do |u|
-              u[:name] == "test 1"
-            end
+            f.filter_by "name = 'test 1'"
             f.filter_subtable(:preferences, :foreign_key => :context_id,
                               :type_key => :context_type, :type => 'User')
           end
@@ -580,9 +500,7 @@ describe PgShrink do
           end
 
           database.filter_table(:users) do |f|
-            f.filter_by do |u|
-              u[:name] == "test 1"
-            end
+            f.filter_by "name = 'test 1'"
             f.filter_subtable(:preferences, :foreign_key => :context_id,
                               :type_key => :context_type, :type => 'User')
           end
@@ -657,9 +575,7 @@ describe PgShrink do
       describe "With a simple cascading filter" do
         before(:each) do
           database.filter_table(:users) do |f|
-            f.filter_by do |u|
-              u[:name] == "test 1"
-            end
+            f.filter_by "name = 'test 1'"
             f.filter_subtable(:apartments_users,
                               :foreign_key => :user_id) do |t|
               t.filter_subtable(:apartments, :foreign_key => :id,

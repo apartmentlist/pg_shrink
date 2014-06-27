@@ -1,6 +1,4 @@
 filter_table :users do |f|
-   f.filter_by do |u|
-      u[:name] == "test 1"
-  end
+  f.filter_by "name = 'test 1'"
   f.filter_subtable(:user_preferences, :foreign_key => :user_id)
 end

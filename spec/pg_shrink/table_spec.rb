@@ -6,52 +6,11 @@ describe PgShrink::Table do
     let(:table) { PgShrink::Table.new(database, :test_table) }
 
     before(:each) do
-      table.filter_by {|test| test[:u] == 1 }
+      table.filter_by 'u = 1'
     end
 
     it "should add filter to filters array" do
       expect(table.filters.size).to eq(1)
-    end
-
-    it "should accept values that match the block" do
-      expect(table.filters.first.apply({:u => 1})).to eq(true)
-    end
-
-    it "should reject values that don't match the block" do
-      expect(table.filters.first.apply({:u => 2})).to eq(false)
-    end
-
-    context "when running filters" do
-      it "should return matching subset" do
-        test_data = [{:u => 1}, {:u => 2}]
-        expect(table).to receive(:records_in_batches).and_yield(test_data)
-        expect(table).to receive(:delete_records) do |old_batch, new_batch|
-          expect(old_batch.size).to eq(2)
-          expect(new_batch.size).to eq(1)
-          expect(new_batch.first).to eq({:u => 1})
-        end
-        table.filter!
-      end
-    end
-
-    context "when locked" do
-      before(:each) do
-        table.lock { |test| !!test[:lock] }
-      end
-
-      it "should not filter locked records" do
-        test_data = [{:u => 1, :lock => false},
-                     {:u => 2, :lock => false},
-                     {:u => 2, :lock => true}]
-        allow(table).to receive(:records_in_batches).and_yield(test_data)
-        allow(table).to receive(:delete_records) do |old_batch, new_batch|
-          expect(old_batch.size).to eq(3)
-          expect(new_batch.size).to eq(2)
-          expect(new_batch).
-            to eq([{:u => 1, :lock => false}, {:u => 2, :lock => true}])
-        end
-        table.filter!
-      end
     end
   end
 
@@ -104,26 +63,8 @@ describe PgShrink::Table do
     it "adds subtable_filter to subtable_filters array" do
       expect(table.subtable_filters.size).to eq(1)
     end
-
-    describe "when running filters" do
-      before(:each) do
-        table.filter_by do |test|
-          !!test[:u]
-        end
-      end
-
-      it "runs subtable filters with old and new batches" do
-        test_data = [{:u => true}, {:u => false}]
-        expect(table).to receive(:records_in_batches).and_yield(test_data)
-        expect(database).to receive(:delete_records)
-        expect(table).to receive(:filter_subtables) do |old_batch, new_batch|
-          expect(old_batch).to eq(test_data)
-          expect(new_batch).to eq([{:u => true}])
-        end
-        table.filter!
-      end
-    end
   end
+
   context "when a remove is specified" do
     let(:database) {PgShrink::Database.new}
     let(:table) { PgShrink::Table.new(database, :test_table) }
@@ -135,18 +76,6 @@ describe PgShrink::Table do
 
     it "should run remove! if there are no dependencies" do
       expect(table).to receive(:remove!)
-      table.shrink!
-    end
-
-    it "should allow locking of records" do
-      table.lock do |u|
-        u[:u] == 1
-      end
-      expect(table).to receive(:records_in_batches).and_yield(test_data)
-      expect(table).to receive(:delete_records) do |old_batch, new_batch|
-        expect(old_batch).to eq(test_data)
-        expect(new_batch).to eq([{:u => 1}])
-      end
       table.shrink!
     end
 

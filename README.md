@@ -21,9 +21,8 @@ or sanitization is to be propagated.
 
 ```ruby
 filter_table :users do |f|
-   f.filter_by do |u|
-      u[:name].match(/save me/)
-  end
+   f.filter_by 'id % 1000 = 0'
+  
   f.sanitize do |u|
     u[:email] = "sanitized_email#{u[:id]}@fake.com"
     u
@@ -39,6 +38,7 @@ those users, and then filter the user_preferences table to contain only
 preferences associated with those users.
 
 ### Full DSL
+
 See the Shrinkfile.example file in this directory for a complete list of the
 available DSL.
 

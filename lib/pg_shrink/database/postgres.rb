@@ -162,6 +162,7 @@ module PgShrink
       filter!
       vacuum_and_reindex_all!
       sanitize!
+      self.log("Shrinking Done!")
     end
   end
 end
