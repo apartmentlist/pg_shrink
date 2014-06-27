@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['kmball11@gmail.com']
   spec.description   = 'pg_shrink makes it simple to shrink and sanitize a PosrgreSQL database'
   spec.summary       = 'pg_shrink'
-  spec.homepage      = 'https://github.com/apartmentlist/pg-shrink'
+  spec.homepage      = 'https://github.com/apartmentlist/pg_shrink'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files`.split($/)
