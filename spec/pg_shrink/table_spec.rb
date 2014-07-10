@@ -45,13 +45,9 @@ describe PgShrink::Table do
     end
   end
 
-  context "when a subtable filter is specified" do
+  context "when any subtable filter is specified" do
     let(:database) {PgShrink::Database.new}
     let(:table) { PgShrink::Table.new(database, :test_table, :primary_key => false) }
-
-    before(:each) do
-      table.filter_subtable(:subtable)
-    end
 
     it "yields back a table so additional manipulations can be made" do
       table.filter_subtable(:subtable) do |f|
@@ -61,9 +57,11 @@ describe PgShrink::Table do
     end
 
     it "adds subtable_filter to subtable_filters array" do
+      table.filter_subtable(:subtable)
       expect(table.subtable_filters.size).to eq(1)
     end
   end
+
 
   context "when a remove is specified" do
     let(:database) {PgShrink::Database.new}

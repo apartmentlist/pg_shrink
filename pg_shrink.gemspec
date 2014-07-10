@@ -6,8 +6,8 @@ require 'pg_shrink/version'
 Gem::Specification.new do |spec|
   spec.name          = 'pg_shrink'
   spec.version       = PgShrink::VERSION
-  spec.authors       = ['Kevin Ball']
-  spec.email         = ['kmball11@gmail.com']
+  spec.authors       = ['Kevin Ball', 'Matt Nemenman']
+  spec.email         = ['kmball11@gmail.com', 'matt@apartmentlist.com']
   spec.description   = 'pg_shrink makes it simple to shrink and sanitize a PosrgreSQL database'
   spec.summary       = 'pg_shrink'
   spec.homepage      = 'https://github.com/apartmentlist/pg_shrink'

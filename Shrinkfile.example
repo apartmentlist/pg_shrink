@@ -23,11 +23,16 @@ filter_table :users do |f|
   f.filter_subtable(:email_preferences, :foreign_key => :user_email,
                                         :primary_key => :email)
 
-  # You can also filter by a polymorphic reference by specifying the
-  # type_key and type.
-  f.filter_subtable(:polymorphic_referneces, :foreign_key => :context_id,
-                                             :type_key => :context_type,
-                                             :type => 'User')
+  # You can also pass an additional where clause expression that restricts
+  # filtering propagation to certain subset of rows. This allows to support
+  # polymorphic relationships, or STI.
+  f.filter_subtable(:email_preferences, foreign_key: user_id,
+                                        where: "type = 'User::Registered'")
+
+  # 'where' clause can be anything that sequel supports
+  f.filter_subtable(:email_preferences, foreign_key: user_id,
+                                              where: {  type: 'User::Registered',
+                                                       color: 'Red'})
 
   # If it feels more natural, you can define additional filters
   # within a filter_subtable definitition

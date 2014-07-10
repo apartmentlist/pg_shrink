@@ -15,9 +15,10 @@ module PgShrink
 
       foreign_key = @opts[:foreign_key]
       finder_options = {foreign_key => old_batch.keys}
-      if @opts[:type_key] && @opts[:type]
-        finder_options[@opts[:type_key]] = @opts[:type]
-      end
+
+      # adding additional filters from where clause.
+      # TODO: support where clauses using non hash syntax (string, symbol)
+      finder_options.merge!(@opts[:where])
 
       parent_field = @opts[:local_field].to_sym
       child_field = @opts[:foreign_field].to_sym

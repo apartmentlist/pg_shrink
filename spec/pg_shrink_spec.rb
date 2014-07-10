@@ -14,13 +14,13 @@ describe PgShrink do
   end
 
 
-  it "should let you specify a different batch size" do
+  it 'should let you specify a different batch size' do
     opts = PgSpecHelper.pg_config.merge(:batch_size => 20000)
     db = PgShrink::Database::Postgres.new(opts)
     expect(db.batch_size).to eq(20000)
   end
 
-  describe "simple foreign_key setup" do
+  describe 'simple foreign_key setup' do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(:all)
       connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
@@ -35,9 +35,9 @@ describe PgShrink do
     end
 
 
-    describe "simple two table filtering" do
+    describe 'simple two table filtering' do
 
-      describe "with 20 users and associated preferences" do
+      describe 'with 20 users and associated preferences' do
         before(:each) do
           PgSpecHelper.clear_table(database.connection, :users)
           PgSpecHelper.clear_table(database.connection, :user_preferences)
@@ -53,24 +53,24 @@ describe PgShrink do
             end
           end
         end
-        describe "with a conditions string" do
+        describe 'with a conditions string' do
           before(:each) do
             database.filter_table(:users) do |f|
               f.filter_by("name like '%test 1%'")
             end
           end
 
-          it "Should not call records in batches" do
+          it 'Should not call records in batches' do
             expect(database).not_to receive(:records_in_batches)
             database.shrink!
           end
 
-          it "Should call delete_records once" do
+          it 'Should call delete_records once' do
             expect(database).to receive(:delete_records).once
             database.shrink!
           end
 
-          it "Should result in the appropriate records being deleted" do
+          it 'Should result in the appropriate records being deleted' do
             database.shrink!
             remaining_users = database.connection.from(:users).all
             # 1 and 10-19
@@ -78,7 +78,7 @@ describe PgShrink do
           end
         end
 
-        describe "when filtering just with a conditions hash" do
+        describe 'when filtering just with a conditions hash' do
           before(:each) do
             database.filter_table(:users) do |f|
               f.filter_by({
@@ -88,30 +88,30 @@ describe PgShrink do
             end
           end
 
-          it "Should not call records in batches" do
+          it 'Should not call records in batches' do
             expect(database).not_to receive(:records_in_batches)
             database.shrink!
           end
 
-          it "Should call delete_records once" do
+          it 'Should call delete_records once' do
             expect(database).to receive(:delete_records).once
             database.shrink!
           end
 
-          it "Should result in the appropriate records being deleted" do
+          it 'Should result in the appropriate records being deleted' do
             database.shrink!
             remaining_users = database.connection.from(:users).all
             expect(remaining_users.size).to eq(10)
           end
 
-          describe "with a subtable_filter" do
+          describe 'with a subtable_filter' do
             before(:each) do
               database.filter_table(:users) do |f|
                 f.filter_subtable(:user_preferences, :foreign_key => :user_id)
               end
             end
 
-            it "should remove the appropriate subtable records" do
+            it 'should remove the appropriate subtable records' do
               database.shrink!
               remaining_prefs = database.connection.from(:user_preferences).all
               expect(remaining_prefs.size).to eq(30)
@@ -119,11 +119,11 @@ describe PgShrink do
           end
         end
 
-        describe "with a test shrinkfile" do
+        describe 'with a test shrinkfile' do
           let(:shrinkfile) {"spec/Shrinkfile.basic"}
           let(:url) {database.connection_string}
 
-          it "should set up a postgres database" do
+          it 'should set up a postgres database' do
             expect(PgShrink::Database::Postgres).to receive(:new) do |opts|
                 expect(opts[:postgres_url]).to eq(database.connection_string)
               end.and_return(database)
@@ -132,7 +132,7 @@ describe PgShrink do
         end
 
 
-        describe "a simple filter and subtable" do
+        describe 'a simple filter and subtable' do
           before(:each) do
             database.filter_table(:users) do |f|
               f.filter_by "name = 'test 1'"
@@ -141,12 +141,12 @@ describe PgShrink do
             database.filter!
           end
 
-          it "will filter users down to the one matching" do
+          it 'will filter users down to the one matching' do
             remaining_users = database.connection.from(:users).all
             expect(remaining_users.size).to eq(1)
           end
 
-          it "will filter preferences to only those associated with the user" do
+          it 'will filter preferences to only those associated with the user' do
             remaining_user = database.connection.from(:users).first
             remaining_preferences = database.connection.
               from(:user_preferences).all
@@ -156,7 +156,7 @@ describe PgShrink do
           end
         end
 
-        describe "a simple filter and subtable with sanitization on each" do
+        describe 'a simple filter and subtable with sanitization on each' do
 
           before(:each) do
             database.filter_table(:users) do |f|
@@ -179,14 +179,14 @@ describe PgShrink do
             database.shrink!
           end
 
-          it "should result in 1 sanitized users" do
+          it 'should result in 1 sanitized users' do
             remaining_users = database.connection.from(:users).all
             expect(remaining_users.size).to  eq(1)
             expect(remaining_users.first[:name]).to match(/sanitized/)
             expect(remaining_users.first[:email]).to match(/blank_email/)
           end
 
-          it "should result in 3 sanitized preferences" do
+          it 'should result in 3 sanitized preferences' do
             remaining_user = database.connection.from(:users).first
             remaining_preferences = database.connection.
               from(:user_preferences).all
@@ -197,7 +197,7 @@ describe PgShrink do
           end
         end
       end
-      describe "with users and preferences including email as value" do
+      describe 'with users and preferences including email as value' do
         before(:each) do
           PgSpecHelper.clear_table(database.connection, :users)
           PgSpecHelper.clear_table(database.connection, :user_preferences)
@@ -216,7 +216,7 @@ describe PgShrink do
           end
         end
 
-        describe "sanitizing subtable" do
+        describe 'sanitizing subtable' do
           before(:each) do
             database.filter_table(:users) do |f|
               f.sanitize do |u|
@@ -227,19 +227,18 @@ describe PgShrink do
                                   :foreign_key => :user_id,
                                   :local_field => :email,
                                   :foreign_field => :value,
-                                  :type_key => :name,
-                                  :type => 'email')
+                                  :where => { :name => 'email' })
             end
             database.shrink!
           end
 
-          it "should sanitize user preference emails" do
+          it 'should sanitize user preference emails' do
             remaining_preferences = database.connection.
               from(:user_preferences).where(:name => 'email').all
             remaining_values = remaining_preferences.map {|p| p[:value]}
             expect(remaining_values.grep(/blank_email/).size).to eq(20)
           end
-          it "should not sanitize preferences with a different type" do
+          it 'should not sanitize preferences with a different type' do
             remaining_preferences = database.connection.
               from(:user_preferences).where(:name => 'name').all
             remaining_values = remaining_preferences.map {|p| p[:value]}
@@ -250,7 +249,7 @@ describe PgShrink do
     end
 
 
-    describe "three table filter chain" do
+    describe 'three table filter chain' do
       before(:all) do
         # Rspec doesn't want you using 'let' defined things in before(:all)
         connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
@@ -260,7 +259,7 @@ describe PgShrink do
                                    'character varying(256)'})
       end
 
-      describe "with 20 users and associated preferences" do
+      describe 'with 20 users and associated preferences' do
         before(:each) do
           PgSpecHelper.clear_table(database.connection, :users)
           PgSpecHelper.clear_table(database.connection, :user_preferences)
@@ -288,7 +287,7 @@ describe PgShrink do
           end
         end
 
-        describe "a simple filter and chained subtables" do
+        describe 'a simple filter and chained subtables' do
           before(:each) do
             database.filter_table(:users) do |f|
               f.filter_by "name = 'test 1'"
@@ -301,11 +300,11 @@ describe PgShrink do
 
             database.filter!
           end
-          it "filters users down to the one matching" do
+          it 'filters users down to the one matching' do
             remaining_users = database.connection.from(:users).all
             expect(remaining_users.size).to  eq(1)
           end
-          it "filters preferences to only those associated with the user" do
+          it 'filters preferences to only those associated with the user' do
             remaining_user = database.connection.from(:users).first
             remaining_preferences = database.connection.
                                              from(:user_preferences).all
@@ -313,8 +312,8 @@ describe PgShrink do
             expect(remaining_preferences.map {|u| u[:user_id]}.uniq).
               to eq([remaining_user[:id]])
           end
-          it "filters preference values to those associated with the " +
-             "preferences remaining" do
+          it 'filters preference values to those associated with the ' +
+             'preferences remaining' do
             remaining_user = database.connection.from(:users).first
             remaining_preferences = database.connection.
               from(:user_preferences).all
@@ -329,7 +328,7 @@ describe PgShrink do
       end
     end
   end
-  describe "polymorphic foreign key subtables" do
+  describe 'polymorphic foreign key subtables' do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(:all)
       connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
@@ -343,7 +342,7 @@ describe PgShrink do
                                  'name' => 'character varying(256)',
                                  'value' => 'character varying(256)'})
     end
-    describe "with 20 users, associated prefs, and prefs for different type" do
+    describe 'with 20 users, associated prefs, and prefs for different type' do
       before(:each) do
         PgSpecHelper.clear_table(database.connection, :users)
         PgSpecHelper.clear_table(database.connection, :preferences)
@@ -363,17 +362,17 @@ describe PgShrink do
         end
       end
 
-      describe "with condition filters" do
-        describe "simple cascade" do
+      describe 'with condition filters' do
+        describe 'simple cascade' do
           before(:each) do
             database.filter_table(:users) do |f|
-              f.filter_by(:name => "test 1")
-              f.filter_subtable(:preferences, :foreign_key => :context_id,
-                                :type_key => :context_type, :type => 'User')
+              f.filter_by(name: 'test 1')
+              f.filter_subtable(:preferences, foreign_key: :context_id,
+                                                    where: { context_type: 'User' } )
             end
             database.filter!
           end
-          it "will filter prefs with context_type 'User'" do
+          it 'will filter prefs with context_type User' do
             #
             remaining_user = database.connection.from(:users).first
             remaining_preferences = database.connection.from(:preferences).
@@ -383,13 +382,13 @@ describe PgShrink do
               to eq([remaining_user[:id]])
           end
 
-          it "will not filter preferences without context_type user" do
+          it 'will not filter preferences without context_type user' do
             remaining_preferences = database.connection.from(:preferences).
               where(:context_type => 'OtherClass').all
             expect(remaining_preferences.size).to eq(20)
           end
         end
-        describe "an extra layer of polymorphic subtables" do
+        describe 'an extra layer of polymorphic subtables' do
           before(:all) do
             connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
                          connection
@@ -416,20 +415,19 @@ describe PgShrink do
             end
 
             database.filter_table(:users) do |f|
-              f.filter_by(:name => "test 1")
-              f.filter_subtable(:preferences, :foreign_key => :context_id,
-                                :type_key => :context_type, :type => 'User')
+              f.filter_by(name: 'test 1')
+              f.filter_subtable(:preferences, foreign_key: :context_id,
+                                                    where: { context_type: 'User' } )
             end
 
             database.filter_table(:preferences) do |f|
               f.filter_subtable(:preference_dependents,
-                                :foreign_key => :context_id,
-                                :type_key => :context_type,
-                                :type => 'Preference')
+                                foreign_key: :context_id,
+                                      where: { context_type: 'Preference' })
             end
             database.filter!
           end
-          it "will filter preference dependents associated with preferences" do
+          it 'will filter preference dependents associated with preferences' do
             remaining_preferences = database.connection.from(:preferences).all
             remaining_dependents = database.connection.
               from(:preference_dependents).
@@ -438,7 +436,7 @@ describe PgShrink do
             expect(remaining_dependents.size).to eq(remaining_preferences.size)
           end
 
-          it "will not filter preference dependents with different type" do
+          it 'will not filter preference dependents with different type' do
             other_dependents = database.connection.
               from(:preference_dependents).
               where(:context_type => 'SomeOtherClass').all
@@ -447,17 +445,17 @@ describe PgShrink do
         end
       end
 
-      describe "simple two table filtering" do
+      describe 'simple two table filtering' do
         before(:each) do
           database.filter_table(:users) do |f|
             f.filter_by "name = 'test 1'"
-            f.filter_subtable(:preferences, :foreign_key => :context_id,
-                              :type_key => :context_type, :type => 'User')
+            f.filter_subtable(:preferences, foreign_key: :context_id,
+                                                  where: {context_type: 'User'})
           end
           database.filter!
         end
 
-        it "will filter prefs with context_type 'User'" do
+        it 'will filter prefs with context_type User' do
           remaining_user = database.connection.from(:users).first
           remaining_preferences = database.connection.from(:preferences).
             where(:context_type => 'User').all
@@ -466,14 +464,14 @@ describe PgShrink do
             to eq([remaining_user[:id]])
         end
 
-        it "will not filter preferences without context_type user" do
+        it 'will not filter preferences without context_type user' do
           remaining_preferences = database.connection.from(:preferences).
             where(:context_type => 'OtherClass').all
           expect(remaining_preferences.size).to eq(20)
         end
       end
 
-      describe "an extra layer of polymorphic subtables" do
+      describe 'an extra layer of polymorphic subtables' do
         before(:all) do
           connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
                        connection
@@ -501,20 +499,19 @@ describe PgShrink do
 
           database.filter_table(:users) do |f|
             f.filter_by "name = 'test 1'"
-            f.filter_subtable(:preferences, :foreign_key => :context_id,
-                              :type_key => :context_type, :type => 'User')
+            f.filter_subtable(:preferences, foreign_key: :context_id,
+                                                  where: {context_type: 'User'} )
           end
 
           database.filter_table(:preferences) do |f|
             f.filter_subtable(:preference_dependents,
-                              :foreign_key => :context_id,
-                              :type_key => :context_type,
-                              :type => 'Preference')
+                              foreign_key: :context_id,
+                                    where: {context_type: 'Preference'} )
           end
           database.filter!
         end
 
-        it "will filter preference dependents associated with preferences" do
+        it 'will filter preference dependents associated with preferences' do
           remaining_preferences = database.connection.from(:preferences).all
           remaining_dependents = database.connection.
             from(:preference_dependents).
@@ -523,7 +520,7 @@ describe PgShrink do
           expect(remaining_dependents.size).to eq(remaining_preferences.size)
         end
 
-        it "will not filter preference dependents with different type" do
+        it 'will not filter preference dependents with different type' do
           other_dependents = database.connection.
             from(:preference_dependents).
             where(:context_type => 'SomeOtherClass').all
@@ -532,7 +529,7 @@ describe PgShrink do
       end
     end
   end
-  describe "has_and_belongs_to_many join tables" do
+  describe 'has_and_belongs_to_many join tables' do
     before(:all) do
       # Rspec doesn't want you using 'let' defined things in before(;all)
       connection = PgShrink::Database::Postgres.new(PgSpecHelper.pg_config).
@@ -547,7 +544,7 @@ describe PgShrink do
                                 {'name' => 'character varying(256)'})
     end
 
-    describe "with 5 users, each with 2 apartments, and 1 apartment shared by all 5" do
+    describe 'with 5 users, each with 2 apartments, and 1 apartment shared by all 5' do
       before(:each) do
         PgSpecHelper.clear_table(database.connection, :users)
         PgSpecHelper.clear_table(database.connection, :apartments_users)
@@ -572,7 +569,7 @@ describe PgShrink do
           end
         end
       end
-      describe "With a simple cascading filter" do
+      describe 'With a simple cascading filter' do
         before(:each) do
           database.filter_table(:users) do |f|
             f.filter_by "name = 'test 1'"
@@ -586,13 +583,13 @@ describe PgShrink do
           database.shrink!
         end
 
-        it "Should filter down apartments_users" do
+        it 'Should filter down apartments_users' do
           u = database.connection.from(:users).where(:name => "test 1").first
           remaining_join_table = database.connection.from(:apartments_users).all
           expect(remaining_join_table.size).to eq(3)
         end
 
-        it "Should filter apartments as well" do
+        it 'Should filter apartments as well' do
           remaining_join_table = database.connection.from(:apartments_users).all
           remaining_apartments = database.connection.from(:apartments).all
           expect(remaining_apartments.size).to eq(3)
