@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/apartmentlist/pg_shrink.svg?branch=master)](https://travis-ci.org/apartmentlist/pg_shrink)
+[![Build Status](https://travis-ci.org/apartmentlist/pg_shrink.svg?branch=main)](https://travis-ci.org/apartmentlist/pg_shrink)
 # PgShrink
 
 The pg_shrink tool makes it easy to shrink and sanitize a postgres database,
-allowing you to specify custom filtering and sanitization via a simple 
+allowing you to specify custom filtering and sanitization via a simple
 DSL in a configuration file (Shrinkfile).
 
 The pg_shrink tool takes two arguments, a url for a postgres database and
@@ -21,7 +21,7 @@ or sanitization is to be propagated.
 ```ruby
 filter_table :users do |f|
    f.filter_by 'id % 1000 = 0'
-  
+
   f.sanitize do |u|
     u[:email] = "sanitized_email#{u[:id]}@fake.com"
     u
@@ -90,4 +90,3 @@ Or install it yourself as:
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
-
